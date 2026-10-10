@@ -216,12 +216,12 @@ class AuthManager {
       this.saveSession(this.currentUser);
       return { 
         success: true, 
-        message: '🎉 അഭിനന്ദനങ്ങൾ! പ്രീമിയം ആക്സസ് വിജയകരമായി അൺലോക്ക് ചെയ്തു! (Premium Plan Unlocked Successfully!)' 
+        message: 'അഭിനന്ദനങ്ങൾ! പ്രീമിയം ആക്സസ് വിജയകരമായി അൺലോക്ക് ചെയ്തു! (Premium Plan Unlocked Successfully!)' 
       };
     } else {
       return { 
         success: false, 
-        message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code). Try code: KERALAB2VIP' 
+        message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code).' 
       };
     }
   }

@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>telc B2 Mündliche Prüfung Trainer • Kerala Edition (മലയാളം & English)</title>
+  <title>telc B2 Mündlich Trainer · Kerala Edition</title>
   <meta name="description" content="Authentic Telc B2 German Oral Exam Preparation Web App exclusively designed for B2 students from Kerala with German, English, and Malayalam translations.">
   
   <!-- Google Fonts: Plus Jakarta Sans & Manjari (Malayalam) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=Noto+Sans+Malayalam:wght@400;600&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/theme.css">
 </head>
 <body class="mode-trilingual">
   <!-- Top App Navigation -->
@@ -19,9 +20,7 @@
     <div class="header-container">
       <div class="brand-group">
         <div class="logo-badge">
-          <span class="flag-de">🇩🇪</span>
           <span class="badge-telc">telc B2</span>
-          <span class="flag-in">🌴</span>
         </div>
         <div class="brand-text">
           <h1>telc B2 Mündlich • Kerala Edition</h1>
@@ -32,17 +31,17 @@
       <!-- Quick Audio, Language & User Controls -->
       <div class="header-controls">
         <div class="control-pill">
-          <label for="langModeSelect">🌐 ഭാഷ:</label>
+          <label for="langModeSelect">ഭാഷ:</label>
           <select id="langModeSelect" class="header-select">
-            <option value="trilingual" selected>🇩🇪 + 🇮🇳 മലയാളം + 🇬🇧 English</option>
-            <option value="en-only">🇩🇪 + 🇬🇧 English Only (No Malayalam)</option>
-            <option value="ml-only">🇩🇪 + 🇮🇳 മലയാളം Focus</option>
-            <option value="de-only">🇩🇪 Nur Deutsch (Immersion)</option>
+            <option value="trilingual" selected>Deutsch + മലയാളം + English</option>
+            <option value="en-only">Deutsch + English</option>
+            <option value="ml-only">Deutsch + മലയാളം</option>
+            <option value="de-only">Nur Deutsch</option>
           </select>
         </div>
 
         <div class="control-pill">
-          <label for="speechRateSelect" id="speechRateLabel">⚡ Tempo:</label>
+          <label for="speechRateSelect" id="speechRateLabel">Tempo:</label>
           <select id="speechRateSelect" class="header-select">
             <option value="0.8">0.8x (Slow)</option>
             <option value="1.0" selected>1.0x (Normal)</option>
@@ -51,7 +50,7 @@
         </div>
 
         <div class="control-pill voice-pill">
-          <label for="voiceSelect">🗣️ Stimme:</label>
+          <label for="voiceSelect">Stimme:</label>
           <select id="voiceSelect" class="header-select">
             <option>Lade Stimmen...</option>
           </select>
@@ -145,7 +144,7 @@
       </div>
       <div class="status-shortcuts">
         <button class="upgrade-chip-btn" id="btnOpenUpgradeModal">
-          ⭐ പ്രീമിയം ഫീച്ചറുകൾ (View Premium Features)
+          പ്രീമിയം ഫീച്ചറുകൾ
         </button>
       </div>
     </div>
@@ -174,10 +173,7 @@
         </div>
         <div id="loginError" class="auth-error-msg" style="display: none;"></div>
         <button type="submit" class="btn-primary auth-submit-btn">ലോഗിൻ ചെയ്യുക (Login)</button>
-        <div class="demo-credentials-box">
-          <small>💡 Quick Demo Accounts:<br>• Free: <code>anisha@gmail.com</code> / <code>password123</code><br>• Premium: <code>rahul@demo.com</code> / <code>password123</code></small>
-        </div>
-      </form>
+              </form>
 
       <!-- Register Form -->
       <form id="registerForm" class="auth-form" style="display: none;">
@@ -206,7 +202,7 @@
     <div class="modal-card glass-panel upgrade-modal-card">
       <button class="modal-close-btn" id="btnCloseUpgradeModal">✕</button>
       <div class="upgrade-header">
-        <span class="gold-crown">👑</span>
+        
         <h2>telc B2 Premium Membership</h2>
         <p class="subtitle-ml">കേരളത്തിലെ വിദ്യാർത്ഥികൾക്കായി പ്രത്യേകമായി രൂപകൽപ്പന ചെയ്ത ഫുൾ ആക്സസ്</p>
       </div>
@@ -217,30 +213,30 @@
           <h3>Free Tier</h3>
           <div class="plan-price">₹0 <span>/ എപ്പോഴും സൗജന്യം</span></div>
           <ul class="plan-features">
-            <li>✓ Teil 1, 2, 3 അടിസ്ഥാന മാതൃകകൾ</li>
-            <li>✓ ഒരു ദിവസം 2 പ്രാവശ്യം Prüfer Simulation</li>
-            <li>✓ അടിസ്ഥാന B2 Redemittel & മലയാള അർത്ഥം</li>
-            <li>✓ മലയാളികൾക്കുള്ള ഗ്രാമർ ടിപ്പുകൾ</li>
+            <li>Teil 1, 2, 3 അടിസ്ഥാന മാതൃകകൾ</li>
+            <li>ഒരു ദിവസം 2 പ്രാവശ്യം Prüfer Simulation</li>
+            <li>അടിസ്ഥാന B2 Redemittel & മലയാള അർത്ഥം</li>
+            <li>മലയാളികൾക്കുള്ള ഗ്രാമർ ടിപ്പുകൾ</li>
           </ul>
           <button class="btn-secondary w-full" id="btnContinueFree">സൗജന്യ വേർഷൻ തുടരുക</button>
         </div>
 
         <div class="plan-card premium-plan-card highlighted-plan">
-          <div class="plan-tag gold-tag">⭐ പൂർണ്ണ ആക്സസ് (VIP)</div>
+          <div class="plan-tag gold-tag">പൂർണ്ണ ആക്സസ്</div>
           <h3>Premium Tier</h3>
           <div class="plan-price gold-price">₹0 <span>(Early Beta Pass)</span></div>
           <ul class="plan-features">
-            <li>⭐ <strong>പരിധിയില്ലാത്ത</strong> AI Prüfer മോക്ക് എക്സാം</li>
-            <li>⭐ എല്ലാ ഭാഗങ്ങളിലെയും സമ്പൂർണ്ണ ചോദ്യശേഖരം</li>
-            <li>⭐ ആശുപത്രി & നേഴ്സിംഗ് സ്പെഷ്യൽ B2 കൺവർസേഷൻസ്</li>
-            <li>⭐ 50+ Nomen-Verb-Verbindungen സമ്പൂർണ്ണ ഓഡിയോ ഡെക്ക്</li>
-            <li>⭐ വിശദമായ മലയാളം ഫീഡ്‌ബാക്കും മാർക്ക് വിശകലനവും</li>
+            <li><strong>പരിധിയില്ലാത്ത</strong> AI Prüfer മോക്ക് എക്സാം</li>
+            <li>എല്ലാ ഭാഗങ്ങളിലെയും സമ്പൂർണ്ണ ചോദ്യശേഖരം</li>
+            <li>ആശുപത്രി & നേഴ്സിംഗ് സ്പെഷ്യൽ B2 കൺവർസേഷൻസ്</li>
+            <li>50+ Nomen-Verb-Verbindungen സമ്പൂർണ്ണ ഓഡിയോ ഡെക്ക്</li>
+            <li>വിശദമായ മലയാളം ഫീഡ്‌ബാക്കും മാർക്ക് വിശകലനവും</li>
           </ul>
 
           <div class="promo-box">
-            <label>🔐 സൗജന്യ പ്രീമിയം കോഡ് (Beta Promo Code):</label>
+            <label>സൗജന്യ പ്രീമിയം കോഡ് (Beta Promo Code):</label>
             <div class="promo-input-row">
-              <input type="text" id="promoCodeInput" placeholder="Enter: KERALAB2VIP">
+              <input type="text" id="promoCodeInput" placeholder="Promo code">
               <button class="btn-primary" id="btnRedeemPromo">അൺലോക്ക്</button>
             </div>
             <div id="promoFeedback" class="promo-feedback-msg"></div>

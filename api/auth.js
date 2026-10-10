@@ -121,7 +121,7 @@ export default async function handler(req, res) {
       const cleanCode = promoCode.trim().toUpperCase();
 
       if (!validCodes.includes(cleanCode)) {
-        return res.status(400).json({ success: false, message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code). Try code: KERALAB2VIP' });
+        return res.status(400).json({ success: false, message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code).' });
       }
 
       await sql`

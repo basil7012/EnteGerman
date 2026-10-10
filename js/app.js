@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = auth.currentUser;
 
     if (!user) {
-      const loginText = state.langMode === 'en-only' ? '👤 Login / Sign Up' : (state.langMode === 'de-only' ? '👤 Anmelden' : '👤 ലോഗിൻ / സൈൻ അപ്പ്');
+      const loginText = state.langMode === 'en-only' ? 'Login / Sign Up' : (state.langMode === 'de-only' ? 'Anmelden' : 'ലോഗിൻ / സൈൻ അപ്പ്');
       userAuthContainer.innerHTML = `
         <button class="btn-auth-login" id="btnOpenLoginModal">
           ${loginText}
@@ -89,10 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btn) btn.addEventListener('click', () => openAuthModal('login'));
     } else {
       const isPrem = user.role === 'premium';
-      const unlockText = state.langMode === 'en-only' ? '👑 Unlock VIP' : (state.langMode === 'de-only' ? '👑 Upgrade' : '👑 അൺലോക്ക്');
+      const unlockText = state.langMode === 'en-only' ? 'Unlock VIP' : (state.langMode === 'de-only' ? 'Upgrade' : 'അൺലോക്ക്');
       userAuthContainer.innerHTML = `
         <div class="user-profile-pill">
-          <span class="user-avatar-badge">${isPrem ? '⭐' : '👤'}</span>
+          <span class="user-avatar-badge">${isPrem ? '' : ''}</span>
           <div class="user-info-text">
             <span class="user-name">${user.name}</span>
             <span class="user-plan-badge ${isPrem ? 'badge-prem' : 'badge-free'}">
@@ -105,8 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
           ` : ''}
           <button class="btn-logout-mini" id="btnLogoutUser" title="Logout">
-            🚪
-          </button>
+                      </button>
         </div>
       `;
 
@@ -317,16 +316,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dynamic Header Labels
     const langLabel = document.querySelector('label[for="langModeSelect"]');
     if (langLabel) {
-      if (state.langMode === 'en-only') langLabel.textContent = '🌐 Language:';
-      else if (state.langMode === 'de-only') langLabel.textContent = '🌐 Sprache:';
-      else langLabel.textContent = '🌐 ഭാഷ:';
+      if (state.langMode === 'en-only') langLabel.textContent = 'Language:';
+      else if (state.langMode === 'de-only') langLabel.textContent = 'Sprache:';
+      else langLabel.textContent = 'ഭാഷ:';
     }
 
     const voiceLabel = document.querySelector('label[for="voiceSelect"]');
     if (voiceLabel) {
-      if (state.langMode === 'en-only') voiceLabel.textContent = '🗣️ Voice:';
-      else if (state.langMode === 'de-only') voiceLabel.textContent = '🗣️ Stimme:';
-      else voiceLabel.textContent = '🗣️ Stimme / Voice:';
+      if (state.langMode === 'en-only') voiceLabel.textContent = 'Voice:';
+      else if (state.langMode === 'de-only') voiceLabel.textContent = 'Stimme:';
+      else voiceLabel.textContent = 'Stimme / Voice:';
     }
 
     // Dynamic Tempo Option Labels
@@ -341,11 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const upgradeChip = document.getElementById('btnOpenUpgradeModal');
     if (upgradeChip) {
       if (state.langMode === 'en-only') {
-        upgradeChip.textContent = '⭐ Premium Features (View VIP Access)';
+        upgradeChip.textContent = 'Premium features';
       } else if (state.langMode === 'de-only') {
-        upgradeChip.textContent = '⭐ Premium-Funktionen (VIP)';
+        upgradeChip.textContent = 'Premium-Funktionen (VIP)';
       } else {
-        upgradeChip.textContent = '⭐ പ്രീമിയം ഫീച്ചറുകൾ (View Premium Features)';
+        upgradeChip.textContent = 'പ്രീമിയം ഫീച്ചറുകൾ';
       }
     }
 
@@ -419,14 +418,14 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="examiner-header">
           <div class="examiner-profile">
             <div class="examiner-avatar-pulse">
-              <span class="avatar-icon">👩‍🏫</span>
+              <span class="avatar-icon"></span>
               <span class="pulse-ring"></span>
             </div>
             <div>
               <div class="examiner-name-badge">
                 <span class="name">${examiner.name}</span>
                 <span class="badge telc-badge">telc B2 Prüferin</span>
-                ${isPrem ? '<span class="badge badge-prem">⭐ Premium Active</span>' : '<span class="badge badge-free">Free Mode (2/day)</span>'}
+                ${isPrem ? '<span class="badge badge-prem">Premium Active</span>' : '<span class="badge badge-free">Free Mode (2/day)</span>'}
               </div>
               <p class="examiner-subtitle">Offizielle Prüfungssimulation • Official Telc B2 Examiner Mode</p>
             </div>
@@ -447,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <select id="taskSelect" class="styled-select">
                 ${currentTaskList.map((t, i) => `
                   <option value="${i}" ${i === state.selectedTaskIndex ? 'selected' : ''}>
-                    ${t.title} ${(!isPrem && i > 1) ? '🔒 (Premium)' : ''}
+                    ${t.title} ${(!isPrem && i > 1) ? '(Premium)' : ''}
                   </option>
                 `).join('')}
               </select>
@@ -456,16 +455,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <!-- Authentic Telc Exam Timer Widget -->
             <div class="exam-timer-widget">
               <div class="timer-display-group">
-                <span class="timer-icon">⏱️</span>
+                <span class="timer-icon"></span>
                 <span class="timer-digits" id="examTimerDisplay">${formatTimerDigits(state.timerSeconds)}</span>
                 <span class="timer-label-part" id="examTimerLabel">${state.examPart === 'teil1' ? 'Teil 1 (3 Min.)' : 'Teil 2/3 (5 Min.)'}</span>
               </div>
               <div class="timer-action-buttons">
                 <button class="btn-timer-ctrl ${state.isTimerRunning ? 'timer-running' : ''}" id="btnToggleTimer">
-                  ${state.isTimerRunning ? '⏸️ Pause' : '▶️ Start'}
+                  ${state.isTimerRunning ? '⏸Pause' : '▶Start'}
                 </button>
                 <button class="btn-timer-ctrl btn-timer-reset" id="btnResetTimer" title="Zeit zurücksetzen">
-                  🔄 Reset
+                  Reset
                 </button>
               </div>
             </div>
@@ -475,9 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Task Briefing Box with Trilingual Guidance -->
         <div class="task-briefing-box">
           <div class="briefing-header">
-            <h4><span class="icon">📋</span> ${currentTask.title}</h4>
+            <h4><span class="icon"></span> ${currentTask.title}</h4>
             <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.prompt || currentTask.contextText || currentTask.situation)}')">
-              🔊 Vorlesen (Read Task)
+              Vorlesen (Read Task)
             </button>
           </div>
           <p class="de-text task-body">${nl2br(currentTask.prompt || currentTask.contextText || currentTask.situation)}</p>
@@ -493,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="examiner-bubble">
             <div class="bubble-meta">
               <strong>${examiner.name} sagt:</strong>
-              <button class="small-audio-btn" id="btnSpeakExaminerPrompt">🔊 Hören</button>
+              <button class="small-audio-btn" id="btnSpeakExaminerPrompt">Hören</button>
             </div>
             <p class="examiner-speech-text" id="examinerSpeechText">
               ${getExaminerIntroSpeech(state.examPart, currentTask)}
@@ -510,16 +509,16 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Student Input & Speaking Studio -->
         <div class="student-response-panel">
           <div class="response-header">
-            <h4><span class="icon">🎙️</span> Ihre Antwort (Your Response${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / നിങ്ങളുടെ മറുപടി' : ''})</h4>
+            <h4><span class="icon"></span> Ihre Antwort (Your Response${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / നിങ്ങളുടെ മറുപടി' : ''})</h4>
             <div class="recording-controls">
               <button class="btn-primary" id="btnVoiceRecord">
-                <span id="micIcon">🎤</span> <span id="micBtnText">Sprechen (Start Mic)</span>
+                <span id="micIcon"></span> <span id="micBtnText">Sprechen (Start Mic)</span>
               </button>
               <button class="btn-secondary" id="btnAudioSaveRecord">
-                ⏺️ Aufnahme für Analyse (Record Audio)
+                ⏺Aufnahme für Analyse (Record Audio)
               </button>
               <button class="btn-sample-insert" id="btnPasteSampleAnswer" title="Musterantwort einfügen">
-                💡 Musterantwort (Sample Answer)
+                Musterantwort (Sample Answer)
               </button>
             </div>
           </div>
@@ -545,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="action-buttons">
               <button class="btn-clear" id="btnClearResponse">Löschen</button>
               <button class="btn-evaluate" id="btnEvaluateResponse">
-                ⭐ Antworten & Prüfer-Feedback erhalten
+                Antworten & Prüfer-Feedback erhalten
               </button>
             </div>
           </div>
@@ -562,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Quick B2 Redemittel Drawer -->
         <div class="quick-phrases-drawer">
           <details>
-            <summary>💡 Empfohlene B2 Redemittel für dieses Thema (Helpful phrases${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' with Malayalam' : ''})</summary>
+            <summary>Empfohlene B2 Redemittel für dieses Thema (Helpful phrases${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' with Malayalam' : ''})</summary>
             <div class="quick-phrases-grid">
               ${getQuickPhrasesForPart(state.examPart)}
             </div>
@@ -616,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="phrase-mini-card" onclick="insertPhraseToInput('${escapeForAttr(p.de)}')">
         <div class="phrase-de">
           <strong>${p.de}</strong>
-          <button class="mini-speak" onclick="event.stopPropagation(); speakGerman('${escapeForAttr(p.de)}')">🔊</button>
+          <button class="mini-speak" onclick="event.stopPropagation(); speakGerman('${escapeForAttr(p.de)}')"></button>
         </div>
         <div class="phrase-ml">${p.ml}</div>
         ${p.en ? `<div class="phrase-en">${p.en}</div>` : ''}
@@ -696,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (btnToggle) {
-      btnToggle.textContent = state.isTimerRunning ? '⏸️ Pause' : '▶️ Start';
+      btnToggle.textContent = state.isTimerRunning ? '⏸Pause' : '▶Start';
       btnToggle.classList.toggle('timer-running', state.isTimerRunning);
     }
     if (label) {
@@ -738,11 +737,11 @@ document.addEventListener('DOMContentLoaded', () => {
         titleDe = 'Mikrofonzugriff blockiert';
         titleMl = 'മൈക്രോഫോൺ അനുമതി തടഞ്ഞിരിക്കുന്നു';
         desc = `
-          <p><strong>🇩🇪 Hinweis:</strong> Der Browser hat den Zugriff auf das Mikrofon blockiert. Klicken Sie in der Adressleiste auf das Schlosssymbol 🔒 und wählen Sie <strong>„Zulassen (Allow)“</strong>.</p>
-          <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> ബ്രൗസറിന്റെ URL ബാറിലുള്ള <strong>ലോക്ക് (🔒) ചിഹ്നത്തിൽ</strong> ക്ലിക്ക് ചെയ്ത് Microphone <strong>'Allow' (അനുമതി)</strong> നൽകുക. അല്ലെങ്കിൽ താഴെയുള്ള ബട്ടൺ വഴി Musterantwort ചേർക്കാം.</p>
-          <p class="mic-alert-en"><strong>🇬🇧 English:</strong> Browser microphone access is blocked. Click the lock/tune icon 🔒 in the address bar and enable microphone permissions.</p>
+          <p><strong>🇩🇪 Hinweis:</strong> Der Browser hat den Zugriff auf das Mikrofon blockiert. Klicken Sie in der Adressleiste auf das Schlosssymbol und wählen Sie <strong>„Zulassen (Allow)“</strong>.</p>
+          <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> ബ്രൗസറിന്റെ URL ബാറിലുള്ള <strong>ലോക്ക് () ചിഹ്നത്തിൽ</strong> ക്ലിക്ക് ചെയ്ത് Microphone <strong>'Allow' (അനുമതി)</strong> നൽകുക. അല്ലെങ്കിൽ താഴെയുള്ള ബട്ടൺ വഴി Musterantwort ചേർക്കാം.</p>
+          <p class="mic-alert-en"><strong>🇬🇧 English:</strong> Browser microphone access is blocked. Click the lock/tune icon in the address bar and enable microphone permissions.</p>
           <div class="mic-alert-actions">
-            <button class="btn-alert-action" id="btnAlertInsertSample">💡 Musterantwort einfügen (Use Sample Answer)</button>
+            <button class="btn-alert-action" id="btnAlertInsertSample">Musterantwort einfügen (Use Sample Answer)</button>
           </div>
         `;
       } else if (type === 'no_microphone') {
@@ -752,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p><strong>🇩🇪 Hinweis:</strong> Es wurde kein Mikrofon an Ihrem Gerät erkannt. Bitte Headset anschließen oder Text eintippen.</p>
           <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> സിസ്റ്റത്തിൽ മൈക്രോഫോൺ കണ്ടെത്താൻ സാധിച്ചില്ല. ഹെഡ്സെറ്റ് ബന്ധിപ്പിക്കുക അല്ലെങ്കിൽ നേരിട്ട് ടൈപ്പ് ചെയ്യുക.</p>
           <div class="mic-alert-actions">
-            <button class="btn-alert-action" id="btnAlertInsertSample">💡 Musterantwort einfügen</button>
+            <button class="btn-alert-action" id="btnAlertInsertSample">Musterantwort einfügen</button>
           </div>
         `;
       } else if (type === 'no_speech') {
@@ -769,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p><strong>🇩🇪 Hinweis:</strong> Der Browser-Spracherkennungsdienst (Google Speech API) konnte nicht kontaktiert werden. Sie können Ihren Text eintippen oder die Musterantwort nutzen.</p>
           <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> ഗൂഗിൾ സ്പീച്ച് സെർവർ കണക്ഷൻ പിശക്. നേരിട്ട് ടൈപ്പ് ചെയ്യുകയോ താഴെയുള്ള Musterantwort ഉപയോഗിക്കുകയോ ചെയ്യാം.</p>
           <div class="mic-alert-actions">
-            <button class="btn-alert-action" id="btnAlertInsertSample">💡 Musterantwort einfügen</button>
+            <button class="btn-alert-action" id="btnAlertInsertSample">Musterantwort einfügen</button>
           </div>
         `;
       } else if (type === 'not_supported') {
@@ -787,11 +786,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       micAlertBox.innerHTML = `
         <div class="mic-alert-content">
-          <div class="mic-alert-icon">🎙️</div>
+          <div class="mic-alert-icon"></div>
           <div class="mic-alert-body">
             <div class="mic-alert-head">
               <strong>${titleDe}</strong> <span class="badge ml-badge">${titleMl}</span>
-              <button type="button" class="mic-alert-close" id="btnDismissMicAlert" title="Schließen">✕</button>
+              <button type="button" class="mic-alert-close" id="btnDismissMicAlert" title="Schließen"></button>
             </div>
             ${desc}
           </div>
@@ -912,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
               if (interimT) {
                 if (liveWaveText) {
-                  liveWaveText.textContent = `🎙️ "${interimT}"...`;
+                  liveWaveText.textContent = `"${interimT}"...`;
                 }
               } else {
                 if (liveWaveText) {
@@ -976,12 +975,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           );
           if (ok) {
-            btnAudioSaveRecord.textContent = '⏹️ Aufnahme stoppen (Stop Recording)';
+            btnAudioSaveRecord.textContent = '⏹Aufnahme stoppen (Stop Recording)';
             btnAudioSaveRecord.classList.add('recording-pulse');
           }
         } else {
           speech.stopAudioRecording();
-          btnAudioSaveRecord.textContent = '⏺️ Aufnahme für Analyse (Record Audio)';
+          btnAudioSaveRecord.textContent = '⏺Aufnahme für Analyse (Record Audio)';
           btnAudioSaveRecord.classList.remove('recording-pulse');
         }
       });
@@ -1000,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!auth.isPremium()) {
           const usedToday = incrementDailyUsage();
           if (usedToday > 3) {
-            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി (3/day) കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക (Use Promo: KERALAB2VIP).');
+            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി (3/day) കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക.');
             openUpgradeModal();
             return;
           }
@@ -1033,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="rubric-bars">
               <div class="rubric-item">
                 <div class="rubric-label">
-                  <span>Aufgabenbewältigung (Task Fulfillment) ${result.isThemaverfehlung ? '<span class="badge-thema-fail">⚠️ Thema verfehlt</span>' : ''}</span>
+                  <span>Aufgabenbewältigung (Task Fulfillment) ${result.isThemaverfehlung ? '<span class="badge-thema-fail">Thema verfehlt</span>' : ''}</span>
                   <strong>${result.ratings.aufgabe}%</strong>
                 </div>
                 <div class="bar-track"><div class="bar-fill ${result.isThemaverfehlung ? 'bar-fill-fail' : ''}" style="width: ${result.ratings.aufgabe}%"></div></div>
@@ -1067,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${result.isThemaverfehlung ? `
           <div class="thema-alert-card">
             <div class="thema-alert-header">
-              <span class="thema-alert-icon">⚠️</span>
+              <span class="thema-alert-icon"></span>
               <h4>Themaverfehlung erkannt! (Off-Topic${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / വിഷയം മാറിയുള്ള സംസാരം' : ''})</h4>
             </div>
             <p class="thema-alert-de">
@@ -1081,14 +1080,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="thema-matched-tags">
               <span>Erkannte Themen-Begriffe:</span> 
               ${result.matchedTopicKeywords && result.matchedTopicKeywords.length > 0 
-                ? result.matchedTopicKeywords.map(k => `<span class="tag tag-matched">✓ ${k}</span>`).join('') 
+                ? result.matchedTopicKeywords.map(k => `<span class="tag tag-matched">${k}</span>`).join('') 
                 : '<span class="tag-none">0 passende Begriffe zum Thema gefunden</span>'}
             </div>
           </div>
         ` : `
           ${result.matchedTopicKeywords && result.matchedTopicKeywords.length > 0 ? `
             <div class="thema-success-banner">
-              🎯 <strong>Themenbezug erfüllt:</strong> ${result.matchedTopicKeywords.length} Schlüsselwörter zum Thema erkannt (${result.matchedTopicKeywords.slice(0, 5).join(', ')}).
+              <strong>Themenbezug erfüllt:</strong> ${result.matchedTopicKeywords.length} Schlüsselwörter zum Thema erkannt (${result.matchedTopicKeywords.slice(0, 5).join(', ')}).
             </div>
           ` : ''}
         `}
@@ -1098,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="comment-box de-comment">
             <div class="comment-badge">🇩🇪 Prüferkommentar (${examiner.name})</div>
             <p>${result.germanExaminerComment}</p>
-            <button class="small-audio-btn" onclick="speakGerman('${escapeForAttr(result.germanExaminerComment)}')">🔊 Vorlesen</button>
+            <button class="small-audio-btn" onclick="speakGerman('${escapeForAttr(result.germanExaminerComment)}')">Vorlesen</button>
           </div>
 
           ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `
@@ -1119,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h6>Erkannte B2 Konnektoren (${result.detectedConnectors.length}):</h6>
             <div class="tag-cloud">
               ${result.detectedConnectors.length > 0 
-                ? result.detectedConnectors.map(c => `<span class="tag tag-connector">✓ ${c}</span>`).join('') 
+                ? result.detectedConnectors.map(c => `<span class="tag tag-connector">${c}</span>`).join('') 
                 : '<span class="tag-none">Keine Konnektoren erkannt</span>'}
             </div>
           </div>
@@ -1128,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h6>Nomen-Verb-Verbindungen (${result.detectedNVV.length}):</h6>
             <div class="tag-cloud">
               ${result.detectedNVV.length > 0 
-                ? result.detectedNVV.map(n => `<span class="tag tag-nvv">⭐ ${n}</span>`).join('') 
+                ? result.detectedNVV.map(n => `<span class="tag tag-nvv">${n}</span>`).join('') 
                 : '<span class="tag-none">Keine NVV erkannt</span>'}
             </div>
           </div>
@@ -1137,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <!-- Grammar Alerts -->
         ${result.grammarAlerts.length > 0 ? `
           <div class="grammar-alerts-card">
-            <h5>⚠️ Grammatik-Hinweis${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' für Malayalam-Sprecher' : ''} (Grammar Alert)</h5>
+            <h5>Grammatik-Hinweis${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' für Malayalam-Sprecher' : ''} (Grammar Alert)</h5>
             ${result.grammarAlerts.map(a => `
               <div class="alert-item">
                 <div class="alert-rule"><strong>${a.type}:</strong> ${a.rule}</div>
@@ -1151,18 +1150,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ${currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0 ? `
           <div class="follow-up-card">
             <div class="follow-up-header">
-              <h5>❓ Offizielle Prüfer-Nachfrage (Examiner Follow-up Question)</h5>
+              <h5>Offizielle Prüfer-Nachfrage (Examiner Follow-up Question)</h5>
               <span class="badge telc-badge">telc Realität</span>
             </div>
             <p class="follow-up-q">${currentTask.examinerQuestions[0].question}</p>
             ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">${currentTask.examinerQuestions[0].questionMl}</div>` : ''}
             <div class="sample-answer-toggle">
               <details>
-                <summary>💡 Musterantwort anzeigen (Sample B2 Answer)</summary>
+                <summary>Musterantwort anzeigen (Sample B2 Answer)</summary>
                 <div class="sample-ans-box">
                   <p class="de-sample"><strong>Musterantwort:</strong> ${currentTask.examinerQuestions[0].sampleAnswer}</p>
                   <p class="ml-sample"><strong>മലയാള അർത്ഥം:</strong> ${currentTask.examinerQuestions[0].sampleAnswerMl}</p>
-                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.examinerQuestions[0].sampleAnswer)}')">🔊 Antwort anhören</button>
+                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.examinerQuestions[0].sampleAnswer)}')">Antwort anhören</button>
                 </div>
               </details>
             </div>
@@ -1233,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="step-content">
                       <div class="phrase-de">
                         <span>"${step.phrase}"</span>
-                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(step.phrase)}')">🔊</button>
+                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(step.phrase)}')"></button>
                       </div>
                       <div class="phrase-ml">${step.ml}</div>
                       ${step.en ? `<div class="phrase-en">${step.en}</div>` : ''}
@@ -1255,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <p><strong>Musterantwort:</strong> ${q.sampleAnswer}</p>
                       <p class="ml-subtext">${q.sampleAnswerMl}</p>
                       ${q.sampleAnswerEn ? `<p class="en-subtext">${q.sampleAnswerEn}</p>` : ''}
-                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(q.sampleAnswer)}')">🔊 Anhören</button>
+                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(q.sampleAnswer)}')">Anhören</button>
                     </div>
                   </div>
                 `).join('')}
@@ -1295,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="context-article-box">
               <div class="article-de">
                 <p><strong>Lesetext:</strong> ${t.contextText}</p>
-                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(t.contextText)}')">🔊 Text anhören</button>
+                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(t.contextText)}')">Text anhören</button>
               </div>
               <div class="article-ml">
                 <p><strong>മലയാള സംഗ്രഹം:</strong> ${t.contextTextMl}</p>
@@ -1309,13 +1308,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <div class="arguments-split">
               <div class="pro-column">
-                <h4 class="pro-heading">👍 Pro-Argumente (അനുകൂല വാദങ്ങൾ)</h4>
+                <h4 class="pro-heading">Pro-Argumente (അനുകൂല വാദങ്ങൾ)</h4>
                 <ul>
                   ${t.proArguments.map(arg => `
                     <li>
                       <div class="arg-de">
                         <span>${arg.de}</span>
-                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')">🔊</button>
+                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')"></button>
                       </div>
                       <div class="arg-ml">${arg.ml}</div>
                       ${arg.en ? `<div class="arg-en">${arg.en}</div>` : ''}
@@ -1325,13 +1324,13 @@ document.addEventListener('DOMContentLoaded', () => {
               </div>
 
               <div class="contra-column">
-                <h4 class="contra-heading">👎 Contra-Argumente (പ്രതികൂല വാദങ്ങൾ)</h4>
+                <h4 class="contra-heading">Contra-Argumente (പ്രതികൂല വാദങ്ങൾ)</h4>
                 <ul>
                   ${t.contraArguments.map(arg => `
                     <li>
                       <div class="arg-de">
                         <span>${arg.de}</span>
-                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')">🔊</button>
+                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')"></button>
                       </div>
                       <div class="arg-ml">${arg.ml}</div>
                       ${arg.en ? `<div class="arg-en">${arg.en}</div>` : ''}
@@ -1382,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="task-check-grid">
                 ${t.tasks.map(task => `
                   <div class="task-check-card">
-                    <div class="check-icon">📌</div>
+                    <div class="check-icon"></div>
                     <div>
                       <div class="task-point-de">${task.point}</div>
                       <div class="task-point-ml">${task.ml}</div>
@@ -1403,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       <p class="line-de">${d.text || d.suggestion}</p>
                       <p class="line-ml">${d.ml}</p>
                       ${d.en ? `<p class="line-en">${d.en}</p>` : ''}
-                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(d.text || d.suggestion)}')">🔊</button>
+                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(d.text || d.suggestion)}')"></button>
                     </div>
                   </div>
                 `).join('')}
@@ -1433,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <div class="redemittel-search-box">
-          <input type="text" id="redemittelSearchInput" class="styled-search-input" placeholder="🔍 Redemittel durchsuchen... (Search German, English or Malayalam)" value="${escapeForAttr(state.redemittelSearch)}">
+          <input type="text" id="redemittelSearchInput" class="styled-search-input" placeholder="Redemittel durchsuchen... (Search German, English or Malayalam)" value="${escapeForAttr(state.redemittelSearch)}">
         </div>
       </div>
 
@@ -1481,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cats.length === 0) {
       container.innerHTML = `
         <div class="no-results-card glass-panel">
-          <p>🔍 Keine Redemittel für <strong>"${state.redemittelSearch}"</strong> gefunden. Bitte versuchen Sie einen anderen Suchbegriff.</p>
+          <p>Keine Redemittel für <strong>"${state.redemittelSearch}"</strong> gefunden. Bitte versuchen Sie einen anderen Suchbegriff.</p>
         </div>
       `;
       return;
@@ -1497,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="phrase-row">
               <div class="col-de">
                 <strong>${p.de}</strong>
-                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(p.de)}')">🔊</button>
+                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(p.de)}')"></button>
               </div>
               <div class="col-en">${p.en || ''}</div>
               <div class="col-ml">${p.ml || ''}</div>
@@ -1524,7 +1523,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <!-- Interactive NVV Flashcard Deck -->
       <div class="nvv-flashcard-section glass-panel">
         <div class="section-title-row">
-          <h3>⚡ Nomen-Verb-Verbindungen Flashcard Trainer</h3>
+          <h3>Nomen-Verb-Verbindungen Flashcard Trainer</h3>
           <span class="badge nvv-badge">Card <span id="cardCounter">1</span> / ${nvv.length}</span>
         </div>
 
@@ -1534,7 +1533,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="card-hint">Nomen-Verb-Verbindung (ക്ലിക്ക് ചെയ്ത് അർത്ഥം കാണുക)</span>
               <h2 id="cardNVVText">${nvv[0].nvv}</h2>
               <p class="card-ex" id="cardEx">${nvv[0].ex}</p>
-              <button class="audio-btn" onclick="event.stopPropagation(); speakGerman(document.getElementById('cardNVVText').textContent)">🔊 Aussprache</button>
+              <button class="audio-btn" onclick="event.stopPropagation(); speakGerman(document.getElementById('cardNVVText').textContent)">Aussprache</button>
             </div>
             <div class="card-back">
               <span class="card-hint">Bedeutung & Übersetzungen</span>
@@ -1547,13 +1546,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="flashcard-nav">
           <button class="btn-secondary" onclick="prevNVVCard()">⬅ Vorherige (Previous)</button>
-          <button class="btn-primary" onclick="nextNVVCard()">Nächste Karte (Next) ➡</button>
+          <button class="btn-primary" onclick="nextNVVCard()">Nächste Karte (Next) </button>
         </div>
       </div>
 
       <!-- Kerala Grammar & Word Order Tips -->
       <div class="kerala-grammar-cards">
-        <h3>🎯 മലയാളികൾ സാധാരണ വരുത്തുന്ന തെറ്റുകളും പരിഹാരങ്ങളും (Key Tips)</h3>
+        <h3>മലയാളികൾ സാധാരണ വരുത്തുന്ന തെറ്റുകളും പരിഹാരങ്ങളും (Key Tips)</h3>
         <div class="tips-grid">
           ${tips.map(tip => `
             <div class="tip-card glass-panel">
@@ -1563,10 +1562,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="tip-en">${tip.english}</p>
               </div>
               <div class="tip-example-box">
-                ${tip.example.incorrect ? `<div class="ex-bad">❌ ${tip.example.incorrect}</div>` : ''}
-                ${tip.example.correct ? `<div class="ex-good">✔️ ${tip.example.correct}</div>` : ''}
+                ${tip.example.incorrect ? `<div class="ex-bad">${tip.example.incorrect}</div>` : ''}
+                ${tip.example.correct ? `<div class="ex-good">${tip.example.correct}</div>` : ''}
                 ${tip.example.simple ? `<div class="ex-simple">A2/B1: ${tip.example.simple}</div>` : ''}
-                ${tip.example.b2Level ? `<div class="ex-b2">⭐ B2 Level: ${tip.example.b2Level}</div>` : ''}
+                ${tip.example.b2Level ? `<div class="ex-b2">B2 Level: ${tip.example.b2Level}</div>` : ''}
                 <div class="ex-ml">മലയാളം: ${tip.example.malayalamMeaning}</div>
               </div>
             </div>
