@@ -9,3 +9,6 @@ Desktop.ini
 # Temp
 .temp/
 scratch/
+
+# Dependencies
+node_modules/
