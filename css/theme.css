@@ -1,0 +1,56 @@
+/* Kerala Kasavu theme: loaded after style.css. Deep teal surfaces, gold border accent, no glass/glow. */
+:root{
+  --bg-dark:#0B1714; --bg-card:#12231F; --bg-card-hover:#183029; --bg-panel:#10201C;
+  --primary:#2E9484; --primary-light:#7FD6C8; --primary-glow:transparent;
+  --accent-gold:#D9A93A; --accent-gold-glow:transparent;
+  --text-main:#EEF4F1; --text-secondary:#A9BDB6; --text-muted:#7E948D; --text-malayalam:#E8C766; --text-english:#9FD3C9;
+  --border-light:#223933; --border-active:#2E9484;
+  --font-heading:'Bricolage Grotesque','Outfit',sans-serif; --font-sans:'Hanken Grotesk','Plus Jakarta Sans',sans-serif; --font-ml:'Noto Sans Malayalam','Manjari',sans-serif;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:14px;
+  --shadow-sm:none; --shadow-lg:0 14px 30px -18px rgba(0,0,0,.7); --shadow-glow:none;
+}
+body{background-image:none;background-color:var(--bg-dark)}
+body::before{content:"";display:block;height:10px;background:repeating-linear-gradient(90deg,#D9A93A 0 3px,transparent 3px 6px),linear-gradient(#D9A93A,#D9A93A) bottom/100% 2px no-repeat}
+.glass-panel,.examiner-card,.topic-card,.plan-card,.redemittel-cat-card,.tip-card,.task-check-card,.feedback-card{background:var(--bg-card);border:1px solid var(--border-light);box-shadow:none}
+h1,h2,h3,.plan-price,.score-number{font-family:var(--font-heading);letter-spacing:-.015em}
+
+/* Header: wordmark instead of flags + emoji */
+.app-header{background:var(--bg-dark);border-bottom:1px solid var(--border-light);position:static}
+.flag-de,.flag-in,.tab-icon,.gold-crown,.mic-alert-icon{display:none!important}
+.logo-badge{background:none;border:0;padding:0}
+.badge-telc{background:var(--accent-gold);color:#1a1300;border-radius:6px;padding:4px 10px;font:800 15px var(--font-heading)}
+.brand-text h1{font-size:1.35rem}
+.subtitle{color:var(--text-secondary);font-size:.85rem}
+.control-pill{background:transparent;border:1px solid var(--border-light);border-radius:8px}
+.header-select{background:transparent;color:var(--text-main)}
+
+/* Tabs: underline style, no pills */
+.main-nav-tabs{border-top:1px solid var(--border-light)}
+.nav-tab-btn{background:transparent;border:0;border-bottom:3px solid transparent;border-radius:0;color:var(--text-secondary);padding:12px 16px;box-shadow:none}
+.nav-tab-btn:hover{color:var(--text-main);background:transparent}
+.nav-tab-btn.active{color:var(--text-main);border-bottom-color:var(--accent-gold);background:transparent;box-shadow:none}
+.tab-badge{background:var(--bg-card-hover);color:var(--text-main);border-radius:6px}
+
+/* Buttons */
+.btn-primary,.btn-evaluate,.auth-submit-btn{background:var(--primary);color:#fff;border:0;box-shadow:none;border-radius:8px}
+.btn-primary:hover,.btn-evaluate:hover{background:#27806F;transform:none;box-shadow:none}
+.btn-secondary{background:transparent;border:1.5px solid var(--primary);color:var(--primary-light);border-radius:8px}
+.upgrade-chip-btn{background:var(--accent-gold);color:#1a1300;border:0;border-radius:8px;font-weight:700;box-shadow:none}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent-gold);outline-offset:2px}
+
+/* Bars, modals, status bar */
+.exam-status-bar{background:var(--bg-panel);border-top:1px solid var(--border-light)}
+.modal-backdrop{background:rgba(4,12,10,.7)}
+.highlighted-plan{border:2px solid var(--accent-gold)}
+.gold-tag{background:var(--accent-gold);color:#1a1300}
+.ml-box{background:rgba(217,169,58,.08);border-color:rgba(217,169,58,.3)}
+.demo-credentials-box{display:none}
+.examiner-avatar-pulse .pulse-ring{animation:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:768px){.brand-text h1{font-size:1.1rem}.nav-tab-btn{padding:10px 12px}}
+.btn-auth-login{background:var(--primary)!important;border:0!important;border-radius:8px!important;box-shadow:none!important}
+.btn-auth-login:hover{background:#27806F!important;transform:none!important}
+.examiner-avatar-pulse{background:var(--primary)!important}
+.status-bar-container{gap:12px;flex-wrap:wrap}
+.upgrade-chip-btn{white-space:nowrap}
+.exam-timer-widget{background:var(--bg-panel)!important;border:1px solid var(--border-light)!important}
