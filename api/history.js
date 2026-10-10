@@ -1,20 +1,23 @@
 import { sql } from '@vercel/postgres';
+import crypto from 'node:crypto';
+import { userIdFromRequest } from './_lib/security.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
-
+  // Same-origin only: no CORS headers.
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
+  }
+
+  const userId = userIdFromRequest(req);
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Please log in again.' });
   }
 
   try {
     // SAVE EXAM RESULT
     if (req.method === 'POST') {
       const {
-        userId,
         examPart,
         taskTitle,
         scoreTotal,
@@ -27,11 +30,13 @@ export default async function handler(req, res) {
         examinerComment
       } = req.body || {};
 
-      if (!userId || !examPart || scoreTotal === undefined) {
+      const num = (v, max = 100) => Math.max(0, Math.min(max, Math.round(Number(v) || 0)));
+      const text = (v, n) => String(v || '').slice(0, n);
+      if (!examPart || scoreTotal === undefined) {
         return res.status(400).json({ success: false, message: 'Missing required exam data' });
       }
 
-      const examId = 'exam_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const examId = 'exam_' + crypto.randomUUID();
 
       await sql`
         INSERT INTO exam_history (
@@ -39,9 +44,9 @@ export default async function handler(req, res) {
           rubric_aufgabe, rubric_ausdruck, rubric_grammatik, rubric_fluency,
           is_themaverfehlung, student_transcript, examiner_comment
         ) VALUES (
-          ${examId}, ${userId}, ${examPart}, ${taskTitle || 'Thema'}, ${scoreTotal},
-          ${rubricAufgabe || 0}, ${rubricAusdruck || 0}, ${rubricGrammatik || 0}, ${rubricFluency || 0},
-          ${Boolean(isThemaverfehlung)}, ${studentTranscript || ''}, ${examinerComment || ''}
+          ${examId}, ${userId}, ${text(examPart, 50)}, ${text(taskTitle || 'Thema', 255)}, ${num(scoreTotal)},
+          ${num(rubricAufgabe)}, ${num(rubricAusdruck)}, ${num(rubricGrammatik)}, ${num(rubricFluency)},
+          ${Boolean(isThemaverfehlung)}, ${text(studentTranscript, 5000)}, ${text(examinerComment, 2000)}
         );
       `;
 
@@ -50,11 +55,6 @@ export default async function handler(req, res) {
 
     // GET USER EXAM HISTORY
     if (req.method === 'GET') {
-      const { userId } = req.query;
-      if (!userId) {
-        return res.status(400).json({ success: false, message: 'User ID required' });
-      }
-
       const history = await sql`
         SELECT id, exam_part, task_title, score_total, rubric_aufgabe, rubric_ausdruck, 
                rubric_grammatik, rubric_fluency, is_themaverfehlung, created_at 
@@ -71,6 +71,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('History API error:', error);
-    return res.status(500).json({ success: false, message: 'Database error: ' + error.message });
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 }

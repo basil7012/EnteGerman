@@ -1,73 +1,28 @@
 /**
- * 100% Free Authentication & Membership System for Telc B2 Kerala App
- * - Supports Guest, Free (Normal), and Premium tiers
- * - Works offline/in-browser via LocalStorage
- * - Ready for Supabase / Firebase free tier integration (50,000 free users)
- * - Allows early testing promo codes to grant Premium access
+ * Authentication & membership for the telc B2 Kerala app.
+ * All accounts, passwords and promo codes are handled by the server (/api/auth).
+ * The browser only keeps the signed session token and the public user profile.
+ * Note: the role stored here is a display hint. The server decides what a token can do.
  */
+
+const OFFLINE_MSG = 'സെർവറുമായി ബന്ധപ്പെടാൻ കഴിഞ്ഞില്ല (Cannot reach the server. Check your internet and try again).';
 
 class AuthManager {
   constructor() {
     this.storageKey = 'telc_b2_kerala_auth';
-    this.usersKey = 'telc_b2_kerala_registered_users';
+    this.tokenKey = 'telc_b2_kerala_token';
+    // Remove data left behind by the old local-only login system.
+    try { localStorage.removeItem('telc_b2_kerala_registered_users'); } catch (e) {}
     this.currentUser = this.loadUser();
-    this.initDefaultUsers();
-  }
-
-  initDefaultUsers() {
-    let users = this.getAllUsers();
-    
-    // Check if anisha@gmail.com exists; if not or if old demo exists, update or add it
-    const anishaUser = {
-      id: 'demo-free',
-      name: 'Anisha',
-      email: 'anisha@gmail.com',
-      password: 'password123',
-      role: 'free',
-      created_at: new Date().toISOString()
-    };
-
-    if (users.length === 0) {
-      users = [
-        anishaUser,
-        {
-          id: 'demo-premium',
-          name: 'Rahul Kurian',
-          email: 'rahul@demo.com',
-          password: 'password123',
-          role: 'premium',
-          created_at: new Date().toISOString()
-        }
-      ];
-      localStorage.setItem(this.usersKey, JSON.stringify(users));
-    } else {
-      // Migrate if old anjali account exists or ensure anisha@gmail.com is present
-      const oldIdx = users.findIndex(u => u.email === 'anjali@demo.com' || u.id === 'demo-free');
-      if (oldIdx !== -1) {
-        users[oldIdx].name = 'Anisha';
-        users[oldIdx].email = 'anisha@gmail.com';
-        localStorage.setItem(this.usersKey, JSON.stringify(users));
-      } else if (!users.some(u => u.email === 'anisha@gmail.com')) {
-        users.unshift(anishaUser);
-        localStorage.setItem(this.usersKey, JSON.stringify(users));
-      }
-
-      // Update current active session if it was anjali
-      if (this.currentUser && (this.currentUser.email === 'anjali@demo.com' || this.currentUser.id === 'demo-free')) {
-        this.currentUser.name = 'Anisha';
-        this.currentUser.email = 'anisha@gmail.com';
-        this.saveSession(this.currentUser);
-      }
+    if (this.currentUser && this.getToken()) {
+      this.refresh();
+    } else if (this.currentUser) {
+      this.logout(); // old session without a token
     }
   }
 
-  getAllUsers() {
-    try {
-      const data = localStorage.getItem(this.usersKey);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      return [];
-    }
+  getToken() {
+    try { return localStorage.getItem(this.tokenKey); } catch (e) { return null; }
   }
 
   loadUser() {
@@ -79,175 +34,110 @@ class AuthManager {
     }
   }
 
-  saveSession(user) {
+  saveSession(user, token) {
     this.currentUser = user;
     localStorage.setItem(this.storageKey, JSON.stringify(user));
+    if (token) localStorage.setItem(this.tokenKey, token);
     window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: user }));
   }
 
-  async register(name, email, password) {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = name.trim();
+  async api(action, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = this.getToken();
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch('/api/auth?action=' + action, {
+      method: body ? 'POST' : 'GET',
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    return { status: res.status, data };
+  }
 
-    // Try Vercel Postgres API first
+  // Re-read the user's real role from the server (keeps premium status accurate).
+  async refresh() {
     try {
-      const res = await fetch('/api/auth?action=register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: cleanName, email: cleanEmail, password: password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.saveSession(data.user);
-          return { success: true, user: data.user, cloudSynced: true };
-        } else if (!data.success) {
-          return { success: false, message: data.message };
-        }
+      const { status, data } = await this.api('me');
+      if (status === 401) return this.logout();
+      if (data.success && data.user) this.saveSession(data.user);
+    } catch (e) {
+      console.info('Could not refresh account (offline).');
+    }
+  }
+
+  async register(name, email, password) {
+    try {
+      const { data } = await this.api('register', { name: name.trim(), email: email.trim().toLowerCase(), password });
+      if (data.success && data.user) {
+        this.saveSession(data.user, data.token);
+        return { success: true, user: data.user, cloudSynced: true };
       }
-    } catch (apiErr) {
-      console.info('Vercel API offline or local mode, using LocalStorage fallback.');
+      return { success: false, message: data.message || OFFLINE_MSG };
+    } catch (e) {
+      return { success: false, message: OFFLINE_MSG };
     }
-
-    // LocalStorage Fallback
-    const users = this.getAllUsers();
-    if (users.some(u => u.email === cleanEmail)) {
-      return { success: false, message: 'ഈ ഇമെയിലിൽ ഇതിനകം ഒരു അക്കൗണ്ട് നിലവിലുണ്ട് (Email already registered).' };
-    }
-
-    const newUser = {
-      id: 'user_' + Date.now(),
-      name: cleanName,
-      email: cleanEmail,
-      password: password,
-      role: 'free',
-      mockExamsUsedToday: 0,
-      joinedAt: new Date().toLocaleDateString()
-    };
-
-    users.push(newUser);
-    localStorage.setItem(this.usersKey, JSON.stringify(users));
-    this.saveSession(newUser);
-    return { success: true, user: newUser, cloudSynced: false };
   }
 
   async login(email, password) {
-    const cleanEmail = email.trim().toLowerCase();
-
-    // Try Vercel Postgres API first
     try {
-      const res = await fetch('/api/auth?action=login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password: password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.saveSession(data.user);
-          return { success: true, user: data.user, cloudSynced: true };
-        } else if (!data.success) {
-          return { success: false, message: data.message };
-        }
+      const { data } = await this.api('login', { email: email.trim().toLowerCase(), password });
+      if (data.success && data.user) {
+        this.saveSession(data.user, data.token);
+        return { success: true, user: data.user, cloudSynced: true };
       }
-    } catch (apiErr) {
-      console.info('Vercel API offline or local mode, using LocalStorage fallback.');
+      return { success: false, message: data.message || OFFLINE_MSG };
+    } catch (e) {
+      return { success: false, message: OFFLINE_MSG };
     }
-
-    // LocalStorage Fallback
-    const users = this.getAllUsers();
-    const user = users.find(u => u.email === cleanEmail && u.password === password);
-
-    if (!user) {
-      return { success: false, message: 'ഇമെയിൽ അല്ലെങ്കിൽ പാസ്‌വേഡ് തെറ്റാണ് (Invalid email or password).' };
-    }
-
-    this.saveSession(user);
-    return { success: true, user: user, cloudSynced: false };
   }
 
   logout() {
     this.currentUser = null;
     localStorage.removeItem(this.storageKey);
+    localStorage.removeItem(this.tokenKey);
     window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: null }));
   }
 
-  // Activate Premium with Free Promo Code (Vercel Postgres & LocalStorage)
+  // Premium is only granted when the server accepts the code.
   async redeemPromoCode(code) {
     if (!this.currentUser) {
       return { success: false, message: 'Please log in first to activate Premium.' };
     }
-
-    const cleanCode = code.trim().toUpperCase();
-
-    // Try Vercel Postgres API first
     try {
-      const res = await fetch('/api/auth?action=redeem-promo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: this.currentUser.id, promoCode: cleanCode })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          this.saveSession(data.user);
-          return { success: true, message: data.message };
-        } else if (!data.success) {
-          return { success: false, message: data.message };
-        }
+      const { status, data } = await this.api('redeem-promo', { promoCode: code.trim() });
+      if (status === 401) {
+        this.logout();
+        return { success: false, message: 'Your session expired. Please log in again.' };
       }
-    } catch (apiErr) {
-      console.info('Vercel API offline, using local promo redemption.');
-    }
-
-    // LocalStorage Fallback
-    const validCodes = ['KERALAB2VIP', 'TELC2026', 'NURSEGERMANY', 'FREEB2'];
-    if (validCodes.includes(cleanCode)) {
-      this.currentUser.role = 'premium';
-      this.currentUser.premiumPlan = 'Founding Member (Free Access)';
-      
-      const users = this.getAllUsers();
-      const idx = users.findIndex(u => u.id === this.currentUser.id);
-      if (idx !== -1) {
-        users[idx].role = 'premium';
-        localStorage.setItem(this.usersKey, JSON.stringify(users));
+      if (data.success && data.user) {
+        this.saveSession(data.user);
+        return { success: true, message: data.message };
       }
-
-      this.saveSession(this.currentUser);
-      return { 
-        success: true, 
-        message: 'അഭിനന്ദനങ്ങൾ! പ്രീമിയം ആക്സസ് വിജയകരമായി അൺലോക്ക് ചെയ്തു! (Premium Plan Unlocked Successfully!)' 
-      };
-    } else {
-      return { 
-        success: false, 
-        message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code).' 
-      };
+      return { success: false, message: data.message || 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code).' };
+    } catch (e) {
+      return { success: false, message: OFFLINE_MSG };
     }
   }
 
   async saveExamResult(examData) {
-    if (!this.currentUser) return null;
+    const token = this.getToken();
+    if (!this.currentUser || !token) return null;
     try {
       const res = await fetch('/api/history', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: this.currentUser.id,
-          ...examData
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(examData)
       });
-      if (res.ok) {
-        return await res.json();
-      }
+      if (res.ok) return await res.json();
     } catch (e) {
-      console.info('Cloud exam save bypassed in local mode');
+      console.info('Cloud exam save skipped (offline).');
     }
     return null;
   }
 
   isPremium() {
-    return this.currentUser && this.currentUser.role === 'premium';
+    return !!this.currentUser && this.currentUser.role === 'premium';
   }
 
   isLoggedIn() {
