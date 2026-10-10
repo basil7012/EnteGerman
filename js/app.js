@@ -188,11 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Form Submissions
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
       const pass = document.getElementById('loginPassword').value;
-      const res = auth.login(email, pass);
+      const res = await auth.login(email, pass);
       const errBox = document.getElementById('loginError');
 
       if (!res.success) {
@@ -210,12 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {
-    registerForm.addEventListener('submit', (e) => {
+    registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('regName').value;
       const email = document.getElementById('regEmail').value;
       const pass = document.getElementById('regPassword').value;
-      const res = auth.register(name, email, pass);
+      const res = await auth.register(name, email, pass);
       const errBox = document.getElementById('registerError');
 
       if (!res.success) {
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Promo Code Redemption
   const btnRedeemPromo = document.getElementById('btnRedeemPromo');
   if (btnRedeemPromo) {
-    btnRedeemPromo.addEventListener('click', () => {
+    btnRedeemPromo.addEventListener('click', async () => {
       const codeInput = document.getElementById('promoCodeInput');
       const feedback = document.getElementById('promoFeedback');
       if (!codeInput || !feedback) return;
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const res = auth.redeemPromoCode(codeInput.value);
+      const res = await auth.redeemPromoCode(codeInput.value);
       if (res.success) {
         feedback.innerHTML = `<span class="text-success">${res.message}</span>`;
         setTimeout(() => {
@@ -1138,6 +1138,22 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = html;
     container.style.display = 'block';
     container.scrollIntoView({ behavior: 'smooth' });
+
+    // Sync exam result to Vercel Postgres if user is logged in
+    if (auth.isLoggedIn()) {
+      auth.saveExamResult({
+        examPart: state.examPart,
+        taskTitle: currentTask.title,
+        scoreTotal: result.scoreTotal,
+        rubricAufgabe: result.ratings.aufgabe,
+        rubricAusdruck: result.ratings.ausdruck,
+        rubricGrammatik: result.ratings.grammatik,
+        rubricFluency: result.ratings.fluency,
+        isThemaverfehlung: result.isThemaverfehlung,
+        studentTranscript: userResponseInput ? userResponseInput.value : '',
+        examinerComment: result.germanExaminerComment
+      });
+    }
   }
 
   /* ========================================================

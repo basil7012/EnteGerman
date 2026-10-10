@@ -1,0 +1,16 @@
+{
+  "name": "ente-german-telc-b2",
+  "version": "1.0.0",
+  "description": "telc B2 German Oral Exam Preparation for Kerala Students with Vercel Postgres Database",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "dev": "npx vercel dev"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  },
+  "keywords": ["telc", "german", "b2", "kerala", "malayalam", "vercel-postgres"],
+  "author": "basil7012",
+  "license": "MIT"
+}

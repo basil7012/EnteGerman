@@ -85,20 +85,42 @@ class AuthManager {
     window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: user }));
   }
 
-  register(name, email, password) {
-    const users = this.getAllUsers();
+  async register(name, email, password) {
     const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
 
+    // Try Vercel Postgres API first
+    try {
+      const res = await fetch('/api/auth?action=register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: cleanName, email: cleanEmail, password: password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          this.saveSession(data.user);
+          return { success: true, user: data.user, cloudSynced: true };
+        } else if (!data.success) {
+          return { success: false, message: data.message };
+        }
+      }
+    } catch (apiErr) {
+      console.info('Vercel API offline or local mode, using LocalStorage fallback.');
+    }
+
+    // LocalStorage Fallback
+    const users = this.getAllUsers();
     if (users.some(u => u.email === cleanEmail)) {
       return { success: false, message: 'ഈ ഇമെയിലിൽ ഇതിനകം ഒരു അക്കൗണ്ട് നിലവിലുണ്ട് (Email already registered).' };
     }
 
     const newUser = {
       id: 'user_' + Date.now(),
-      name: name.trim(),
+      name: cleanName,
       email: cleanEmail,
       password: password,
-      role: 'free', // Default is Free / Normal version
+      role: 'free',
       mockExamsUsedToday: 0,
       joinedAt: new Date().toLocaleDateString()
     };
@@ -106,12 +128,34 @@ class AuthManager {
     users.push(newUser);
     localStorage.setItem(this.usersKey, JSON.stringify(users));
     this.saveSession(newUser);
-    return { success: true, user: newUser };
+    return { success: true, user: newUser, cloudSynced: false };
   }
 
-  login(email, password) {
-    const users = this.getAllUsers();
+  async login(email, password) {
     const cleanEmail = email.trim().toLowerCase();
+
+    // Try Vercel Postgres API first
+    try {
+      const res = await fetch('/api/auth?action=login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, password: password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          this.saveSession(data.user);
+          return { success: true, user: data.user, cloudSynced: true };
+        } else if (!data.success) {
+          return { success: false, message: data.message };
+        }
+      }
+    } catch (apiErr) {
+      console.info('Vercel API offline or local mode, using LocalStorage fallback.');
+    }
+
+    // LocalStorage Fallback
+    const users = this.getAllUsers();
     const user = users.find(u => u.email === cleanEmail && u.password === password);
 
     if (!user) {
@@ -119,7 +163,7 @@ class AuthManager {
     }
 
     this.saveSession(user);
-    return { success: true, user: user };
+    return { success: true, user: user, cloudSynced: false };
   }
 
   logout() {
@@ -128,20 +172,40 @@ class AuthManager {
     window.dispatchEvent(new CustomEvent('auth-state-changed', { detail: null }));
   }
 
-  // Activate Premium with Free Promo Code during establishing period
-  redeemPromoCode(code) {
+  // Activate Premium with Free Promo Code (Vercel Postgres & LocalStorage)
+  async redeemPromoCode(code) {
     if (!this.currentUser) {
       return { success: false, message: 'Please log in first to activate Premium.' };
     }
 
-    const validCodes = ['KERALAB2VIP', 'TELC2026', 'NURSEGERMANY', 'FREEB2'];
     const cleanCode = code.trim().toUpperCase();
 
+    // Try Vercel Postgres API first
+    try {
+      const res = await fetch('/api/auth?action=redeem-promo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: this.currentUser.id, promoCode: cleanCode })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          this.saveSession(data.user);
+          return { success: true, message: data.message };
+        } else if (!data.success) {
+          return { success: false, message: data.message };
+        }
+      }
+    } catch (apiErr) {
+      console.info('Vercel API offline, using local promo redemption.');
+    }
+
+    // LocalStorage Fallback
+    const validCodes = ['KERALAB2VIP', 'TELC2026', 'NURSEGERMANY', 'FREEB2'];
     if (validCodes.includes(cleanCode)) {
       this.currentUser.role = 'premium';
       this.currentUser.premiumPlan = 'Founding Member (Free Access)';
       
-      // Update in user list
       const users = this.getAllUsers();
       const idx = users.findIndex(u => u.id === this.currentUser.id);
       if (idx !== -1) {
@@ -160,6 +224,26 @@ class AuthManager {
         message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code). Try code: KERALAB2VIP' 
       };
     }
+  }
+
+  async saveExamResult(examData) {
+    if (!this.currentUser) return null;
+    try {
+      const res = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: this.currentUser.id,
+          ...examData
+        })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      console.info('Cloud exam save bypassed in local mode');
+    }
+    return null;
   }
 
   isPremium() {
