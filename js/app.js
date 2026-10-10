@@ -313,6 +313,42 @@ document.addEventListener('DOMContentLoaded', () => {
         brandSub.textContent = 'ജർമ്മൻ B2 വായ്മൊഴി പരീക്ഷാ പരിശീലനം (മലയാളം & English Guidance)';
       }
     }
+
+    // Dynamic Header Labels
+    const langLabel = document.querySelector('label[for="langModeSelect"]');
+    if (langLabel) {
+      if (state.langMode === 'en-only') langLabel.textContent = '🌐 Language:';
+      else if (state.langMode === 'de-only') langLabel.textContent = '🌐 Sprache:';
+      else langLabel.textContent = '🌐 ഭാഷ:';
+    }
+
+    const voiceLabel = document.querySelector('label[for="voiceSelect"]');
+    if (voiceLabel) {
+      if (state.langMode === 'en-only') voiceLabel.textContent = '🗣️ Voice:';
+      else if (state.langMode === 'de-only') voiceLabel.textContent = '🗣️ Stimme:';
+      else voiceLabel.textContent = '🗣️ Stimme / Voice:';
+    }
+
+    // Dynamic Tempo Option Labels
+    const slowOption = speechRateSelect ? speechRateSelect.querySelector('option[value="0.8"]') : null;
+    if (slowOption) {
+      if (state.langMode === 'de-only') slowOption.textContent = '0.8x (Langsam)';
+      else if (state.langMode === 'ml-only') slowOption.textContent = '0.8x (Slow / പതുക്കെ)';
+      else slowOption.textContent = '0.8x (Slow)';
+    }
+
+    // Dynamic Bottom Bar Upgrade Chip
+    const upgradeChip = document.getElementById('btnOpenUpgradeModal');
+    if (upgradeChip) {
+      if (state.langMode === 'en-only') {
+        upgradeChip.textContent = '⭐ Premium Features (View VIP Access)';
+      } else if (state.langMode === 'de-only') {
+        upgradeChip.textContent = '⭐ Premium-Funktionen (VIP)';
+      } else {
+        upgradeChip.textContent = '⭐ പ്രീമിയം ഫീച്ചറുകൾ (View Premium Features)';
+      }
+    }
+
     renderUserAuthWidget();
   }
 
