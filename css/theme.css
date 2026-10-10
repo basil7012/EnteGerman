@@ -54,3 +54,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .status-bar-container{gap:12px;flex-wrap:wrap}
 .upgrade-chip-btn{white-space:nowrap}
 .exam-timer-widget{background:var(--bg-panel)!important;border:1px solid var(--border-light)!important}
+.examiner-avatar-pulse::after{content:"W";color:#fff;font:800 24px var(--font-heading)}
+.styled-select,.header-select{max-width:100%}
+@media (max-width:768px){.examiner-controls-top>*{min-width:0;max-width:100%}.styled-select{width:100%}}
