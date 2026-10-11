@@ -290,6 +290,25 @@ document.addEventListener('DOMContentLoaded', () => {
     window.speechSynthesis.onvoiceschanged = populateVoiceSelect;
   }
 
+  // In English-only / German-only mode, remove Malayalam that is baked into headings of the study tabs.
+  function scrubMalayalam() {
+    if (state.langMode === 'trilingual' || state.langMode === 'ml-only') return;
+    const hasMl = /[\u0D00-\u0D7F]/;
+    ['teil1Content', 'teil2Content', 'teil3Content', 'redemittelContent'].forEach(id => {
+      const root = document.getElementById(id);
+      if (!root) return;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(node => {
+        if (!hasMl.test(node.nodeValue)) return;
+        node.nodeValue = node.nodeValue.replace(/\s*\([^)]*[\u0D00-\u0D7F][^)]*\)/g, '');
+        const el = node.parentElement;
+        if (el && hasMl.test(node.nodeValue) && el.children.length === 0) el.style.display = 'none';
+      });
+    });
+  }
+
   function updateLanguageVisibility() {
     document.body.classList.remove('mode-de-only', 'mode-ml-only', 'mode-trilingual', 'mode-en-only');
     if (state.langMode === 'de-only') {
@@ -355,6 +374,13 @@ document.addEventListener('DOMContentLoaded', () => {
     langModeSelect.addEventListener('change', (e) => {
       state.langMode = e.target.value;
       updateLanguageVisibility();
+      // Re-draw the open tab so its text follows the new language (the live examiner keeps its typed text).
+      const redraw = {
+        teil1: renderTeil1Studio, teil2: renderTeil2Studio, teil3: renderTeil3Studio,
+        redemittel: renderRedemittelTab, kerala: renderKeralaTab
+      }[state.currentTab];
+      if (redraw) redraw();
+      scrubMalayalam();
     });
   }
 
@@ -394,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (targetTab === 'redemittel') renderRedemittelTab();
       if (targetTab === 'kerala') renderKeralaTab();
       if (targetTab === 'examiner') renderExaminerStage();
+      scrubMalayalam();
     });
   });
 
@@ -1514,59 +1541,91 @@ document.addEventListener('DOMContentLoaded', () => {
     const tips = TELC_B2_DATA.keralaTips;
     const nvv = TELC_B2_DATA.nvvList;
 
+    // Language mode: de-only = German, en-only = German + English,
+    // ml-only = German + Malayalam, trilingual = all three.
+    const mode = state.langMode;
+    const showEn = mode === 'trilingual' || mode === 'en-only';
+    const showMl = mode === 'trilingual' || mode === 'ml-only';
+    const deOnly = mode === 'de-only';
+
+    // German text with the chosen help languages in brackets.
+    const L = (de, en, ml) => {
+      const extra = [];
+      if (showEn && en) extra.push(en);
+      if (showMl && ml) extra.push(ml);
+      return extra.length ? `${de} (${extra.join(' / ')})` : de;
+    };
+    // German first line, then one line per chosen help language.
+    const lines = (de, en, ml) => [de, showEn && en, showMl && ml].filter(Boolean).join('<br>');
+    // Remove "(...)" groups that contain Malayalam, and turn the wrong/correct markers into symbols.
+    const hasMl = /[\u0D00-\u0D7F]/;
+    const cleanText = (str) => {
+      if (showMl || !str) return str || '';
+      return str
+        .replace(/\(\s*തെറ്റ്\s*\)/g, showEn ? '(wrong)' : '✗')
+        .replace(/\(\s*ശരി\s*\)/g, showEn ? '(correct)' : '✓')
+        .replace(/\s*\([^)]*\)/g, (m) => (hasMl.test(m) ? '' : m))
+        .trim();
+    };
+
     container.innerHTML = `
       <div class="studio-header">
-        <h2>Kerala Students' Special B2 Toolkit (കേരള വിദ്യാർത്ഥികൾക്കായി)</h2>
-        <p class="subtitle">Common errors made by Malayalam native speakers and high-scoring Nomen-Verb-Verbindungen</p>
+        <h2>${L('Kerala-Toolkit für B2', "Kerala Students' Special B2 Toolkit", 'കേരള വിദ്യാർത്ഥികൾക്കായി')}</h2>
+        <p class="subtitle">${lines(
+          'Typische Fehler von Malayalam-Muttersprachlern und punktestarke Nomen-Verb-Verbindungen',
+          'Common errors made by Malayalam native speakers and high-scoring Nomen-Verb-Verbindungen',
+          'മലയാളം സംസാരിക്കുന്നവരുടെ സാധാരണ തെറ്റുകളും ഉയർന്ന സ്കോർ നേടാൻ സഹായിക്കുന്ന Nomen-Verb-Verbindungen-ഉം'
+        )}</p>
       </div>
 
       <!-- Interactive NVV Flashcard Deck -->
       <div class="nvv-flashcard-section glass-panel">
         <div class="section-title-row">
-          <h3>Nomen-Verb-Verbindungen Flashcard Trainer</h3>
-          <span class="badge nvv-badge">Card <span id="cardCounter">1</span> / ${nvv.length}</span>
+          <h3>${L('Nomen-Verb-Verbindungen: Karteikarten', 'Flashcard Trainer')}</h3>
+          <span class="badge nvv-badge">${L('Karte', 'Card')} <span id="cardCounter">1</span> / ${nvv.length}</span>
         </div>
 
         <div class="flashcard-container" id="nvvFlashcard" onclick="flipNVVCard()" tabindex="0" role="button" aria-label="Flip flashcard">
           <div class="flashcard-inner" id="nvvFlashcardInner">
             <div class="card-front">
-              <span class="card-hint">Nomen-Verb-Verbindung (ക്ലിക്ക് ചെയ്ത് അർത്ഥം കാണുക)</span>
+              <span class="card-hint">${L('Nomen-Verb-Verbindung · Karte antippen', 'tap the card for the meaning', 'ക്ലിക്ക് ചെയ്ത് അർത്ഥം കാണുക')}</span>
               <h2 id="cardNVVText">${nvv[0].nvv}</h2>
               <p class="card-ex" id="cardEx">${nvv[0].ex}</p>
-              <button class="audio-btn" onclick="event.stopPropagation(); speakGerman(document.getElementById('cardNVVText').textContent)">Aussprache</button>
+              <button class="audio-btn" onclick="event.stopPropagation(); speakGerman(document.getElementById('cardNVVText').textContent)">${L('Aussprache', 'Pronunciation')}</button>
             </div>
             <div class="card-back">
-              <span class="card-hint">Bedeutung & Übersetzungen</span>
+              <span class="card-hint">${L('Bedeutung', 'Meaning', 'അർത്ഥം')}</span>
               <div class="meaning-item"><strong>Einfaches Verb:</strong> <span id="cardVerb">${nvv[0].verb}</span></div>
-              <div class="meaning-item"><strong>English:</strong> <span id="cardEn">${nvv[0].en}</span></div>
-              <div class="meaning-item ml-highlight"><strong>മലയാളം:</strong> <span id="cardMl">${nvv[0].ml}</span></div>
+              ${showEn ? `<div class="meaning-item"><strong>English:</strong> <span id="cardEn">${nvv[0].en}</span></div>` : ''}
+              ${showMl ? `<div class="meaning-item ml-highlight"><strong>മലയാളം:</strong> <span id="cardMl">${nvv[0].ml}</span></div>` : ''}
             </div>
           </div>
         </div>
 
         <div class="flashcard-nav">
-          <button class="btn-secondary" onclick="prevNVVCard()">⬅ Vorherige (Previous)</button>
-          <button class="btn-primary" onclick="nextNVVCard()">Nächste Karte (Next) </button>
+          <button class="btn-secondary" onclick="prevNVVCard()">${L('Vorherige Karte', 'Previous')}</button>
+          <button class="btn-primary" onclick="nextNVVCard()">${L('Nächste Karte', 'Next')}</button>
         </div>
       </div>
 
       <!-- Kerala Grammar & Word Order Tips -->
       <div class="kerala-grammar-cards">
-        <h3>മലയാളികൾ സാധാരണ വരുത്തുന്ന തെറ്റുകളും പരിഹാരങ്ങളും (Key Tips)</h3>
+        <h3>${L('Häufige Fehler und Lösungen', 'Key tips: common mistakes and fixes', 'മലയാളികൾ സാധാരണ വരുത്തുന്ന തെറ്റുകളും പരിഹാരങ്ങളും')}</h3>
         <div class="tips-grid">
           ${tips.map(tip => `
             <div class="tip-card glass-panel">
-              <h4>${tip.title}</h4>
+              <h4>${cleanText(tip.title)}</h4>
               <div class="tip-body">
-                <p class="tip-ml">${tip.malayalam}</p>
-                <p class="tip-en">${tip.english}</p>
+                ${showMl ? `<p class="tip-ml">${tip.malayalam}</p>` : ''}
+                ${showEn ? `<p class="tip-en">${tip.english}</p>` : ''}
+                ${deOnly ? `<p class="tip-en">Erklärungen sind im Modus „Nur Deutsch“ ausgeblendet. Wechseln Sie die Sprache oben, um sie zu sehen.</p>` : ''}
               </div>
               <div class="tip-example-box">
-                ${tip.example.incorrect ? `<div class="ex-bad">${tip.example.incorrect}</div>` : ''}
-                ${tip.example.correct ? `<div class="ex-good">${tip.example.correct}</div>` : ''}
+                ${tip.example.incorrect ? `<div class="ex-bad">${cleanText(tip.example.incorrect)}</div>` : ''}
+                ${tip.example.correct ? `<div class="ex-good">${cleanText(tip.example.correct)}</div>` : ''}
                 ${tip.example.simple ? `<div class="ex-simple">A2/B1: ${tip.example.simple}</div>` : ''}
                 ${tip.example.b2Level ? `<div class="ex-b2">B2 Level: ${tip.example.b2Level}</div>` : ''}
-                <div class="ex-ml">മലയാളം: ${tip.example.malayalamMeaning}</div>
+                ${showMl ? `<div class="ex-ml">മലയാളം: ${tip.example.malayalamMeaning}</div>` : ''}
               </div>
             </div>
           `).join('')}
