@@ -57,3 +57,54 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .examiner-avatar-pulse::after{content:"W";color:#fff;font:800 24px var(--font-heading)}
 .styled-select,.header-select{max-width:100%}
 @media (max-width:768px){.examiner-controls-top>*{min-width:0;max-width:100%}.styled-select{width:100%}}
+
+/* ===== Mobile & touch ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+button,.nav-tab-btn,select{touch-action:manipulation}
+.tabs-scroll-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity}
+.tabs-scroll-wrapper::-webkit-scrollbar{display:none}
+.nav-tab-btn{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start}
+
+@media (max-width:768px){
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+  .header-container{padding:12px 14px;gap:10px}
+  .brand-group{gap:10px}
+  .subtitle{font-size:.72rem;line-height:1.35}
+  /* compact header controls: two columns */
+  .header-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+  .control-pill{min-width:0;padding:6px 10px;display:flex;align-items:center;gap:6px}
+  .control-pill label{font-size:.72rem;white-space:nowrap}
+  .control-pill .header-select{flex:1;min-width:0;width:100%;text-overflow:ellipsis;font-size:16px}
+  .control-pill:first-child,.voice-pill,.user-auth-widget{grid-column:1/-1}
+  .user-auth-widget .btn-auth-login{width:100%;min-height:44px}
+  .tab-badge,.kerala-badge{display:none}
+  .nav-tab-btn{min-height:46px;padding:10px 14px;font-size:.9rem}
+  .main-container,.tab-content{padding-left:12px;padding-right:12px}
+  /* exam controls */
+  .examiner-controls-top{display:grid!important;grid-template-columns:1fr;gap:12px}
+  .examiner-controls-top>*{min-width:0;max-width:100%}
+  .styled-select,select,textarea,input{font-size:16px;max-width:100%}
+  .exam-timer-widget{flex-wrap:wrap;justify-content:center;gap:10px}
+  /* speaking studio: big thumb-friendly buttons */
+  .response-header{flex-direction:column;align-items:stretch;gap:10px}
+  .recording-controls{display:flex;flex-direction:column;gap:8px;width:100%}
+  .recording-controls button{width:100%;min-height:50px;justify-content:center;font-size:1rem}
+  #btnVoiceRecord{min-height:56px;font-weight:700}
+  #btnVoiceRecord.active-recording{background:#C0392B;color:#fff}
+  .response-footer{flex-direction:column;align-items:stretch;gap:10px}
+  .action-buttons{display:flex;flex-direction:column;gap:8px;width:100%}
+  .action-buttons button{width:100%;min-height:50px}
+  textarea#userResponseInput{min-height:140px}
+  audio{width:100%}
+  /* bottom bar: slim, safe-area aware */
+  .exam-status-bar{padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px))}
+  .status-bar-container{flex-wrap:nowrap;align-items:center}
+  .status-info .target-desc,.status-info .divider{display:none}
+  .status-info{font-size:.75rem;min-width:0}
+  .upgrade-chip-btn{min-height:40px;padding:8px 12px;font-size:.8rem;white-space:nowrap}
+  /* modals fit small screens */
+  .modal-card{width:94vw;max-width:94vw;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .modal-close-btn{min-width:44px;min-height:44px}
+}
+@media (max-width:380px){.brand-text h1{font-size:1rem}.nav-tab-btn{padding:10px 11px}}

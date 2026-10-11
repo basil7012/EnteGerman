@@ -124,7 +124,7 @@ class SpeechEngine {
   async startListening(onResult, onStatusChange) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      if (onStatusChange) onStatusChange('not_supported', 'Speech Recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
+      if (onStatusChange) onStatusChange('not_supported', 'Speech Recognition is not supported in this browser. Please use Google Chrome (Android) or Safari (iPhone/iPad).');
       return;
     }
 
@@ -138,9 +138,9 @@ class SpeechEngine {
         console.warn('Microphone permission check returned error:', micErr);
         if (onStatusChange) {
           if (micErr.name === 'NotAllowedError' || micErr.name === 'PermissionDeniedError') {
-            onStatusChange('permission_denied', 'Microphone access is blocked. Please allow microphone permissions in your browser URL bar.');
+            onStatusChange('permission_denied', 'Microphone access is blocked. Please allow microphone permissions in your browser settings.');
           } else if (micErr.name === 'NotFoundError' || micErr.name === 'DevicesNotFoundError') {
-            onStatusChange('no_microphone', 'No microphone detected on your system. Please connect a headset or mic.');
+            onStatusChange('no_microphone', 'No microphone detected on your device. Please connect a headset or mic.');
           } else {
             onStatusChange('error', micErr.message || micErr.name);
           }
@@ -149,25 +149,36 @@ class SpeechEngine {
       }
     }
 
-    // Stop any existing instance
+    // Stop any existing session, then keep listening until the user presses Stop.
     this.stopListening();
+    this.onResultCb = onResult;
+    this.onStatusCb = onStatusChange;
+    this.wantListening = true;
+    this.quickEnds = 0;
+    this.networkRetries = 0;
+    this._beginRecognition();
+  }
 
-    // Create fresh instance to prevent InvalidStateError
-    this.recognition = this.createSpeechRecognition();
-    if (!this.recognition) {
-      if (onStatusChange) onStatusChange('not_supported');
+  // Browsers end recognition by themselves after a few seconds of silence.
+  // Each time that happens we quietly start a new session, so a pause never stops the mic.
+  _beginRecognition() {
+    const rec = this.createSpeechRecognition();
+    if (!rec) {
+      this.wantListening = false;
+      if (this.onStatusCb) this.onStatusCb('not_supported');
       return;
     }
-
+    this.recognition = rec;
+    this.lastStartAt = Date.now();
     this.isListening = true;
-    if (onStatusChange) onStatusChange('listening');
 
-    this.recognition.onstart = () => {
+    rec.onstart = () => {
       this.isListening = true;
-      if (onStatusChange) onStatusChange('listening');
+      if (this.onStatusCb) this.onStatusCb('listening');
     };
 
-    this.recognition.onresult = (event) => {
+    rec.onresult = (event) => {
+      this.networkRetries = 0;
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -177,41 +188,70 @@ class SpeechEngine {
           interimTranscript += event.results[i][0].transcript;
         }
       }
-      if (onResult) {
-        onResult(finalTranscript, interimTranscript);
-      }
+      if (this.onResultCb) this.onResultCb(finalTranscript, interimTranscript);
     };
 
-    this.recognition.onerror = (event) => {
+    rec.onerror = (event) => {
+      if (this.recognition !== rec) return;
       console.warn('Speech recognition error event:', event.error);
+      // Pauses and short interruptions are normal: onend will restart listening.
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      if (event.error === 'network' && this.networkRetries < 3) {
+        this.networkRetries++;
+        return;
+      }
+      this.wantListening = false;
       this.isListening = false;
-      if (onStatusChange) {
-        if (event.error === 'not-allowed') {
-          onStatusChange('permission_denied', 'Microphone permission blocked. Click the lock icon in the browser address bar to allow.');
-        } else if (event.error === 'no-speech') {
-          onStatusChange('no_speech', 'No speech was detected. Please speak closer to your microphone.');
-        } else if (event.error === 'network') {
-          onStatusChange('network_error', 'Network error connecting to speech recognition service.');
-        } else {
-          onStatusChange('error', event.error);
-        }
+      const cb = this.onStatusCb;
+      if (!cb) return;
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        cb('permission_denied', 'Microphone permission blocked. Allow the microphone for this site in your browser settings.');
+      } else if (event.error === 'network') {
+        cb('network_error', 'Network error connecting to the speech recognition service.');
+      } else {
+        cb('error', event.error);
       }
     };
 
-    this.recognition.onend = () => {
+    rec.onend = () => {
+      if (this.recognition !== rec) return;
       this.isListening = false;
-      if (onStatusChange) onStatusChange('ended');
+
+      if (!this.wantListening) {
+        if (this.onStatusCb) this.onStatusCb('ended');
+        return;
+      }
+
+      // Guard against an endless restart loop if the browser keeps ending instantly.
+      this.quickEnds = (Date.now() - this.lastStartAt < 700) ? this.quickEnds + 1 : 0;
+      if (this.quickEnds >= 4) {
+        this.wantListening = false;
+        if (this.onStatusCb) this.onStatusCb('error', 'The microphone keeps stopping. Close other apps using the mic and try again.');
+        return;
+      }
+
+      setTimeout(() => {
+        if (!this.wantListening || this.recognition !== rec) return;
+        try {
+          this._beginRecognition();
+        } catch (e) {
+          this.wantListening = false;
+          if (this.onStatusCb) this.onStatusCb('error', e.message);
+        }
+      }, 250);
     };
 
     try {
-      this.recognition.start();
+      rec.start();
     } catch (e) {
       console.warn('Recognition start exception:', e);
-      if (onStatusChange) onStatusChange('error', e.message);
+      this.wantListening = false;
+      if (this.onStatusCb) this.onStatusCb('error', e.message);
     }
   }
 
   stopListening() {
+    this.wantListening = false;
     if (this.recognition) {
       try {
         this.recognition.stop();
