@@ -108,3 +108,7 @@ button,.nav-tab-btn,select{touch-action:manipulation}
   .modal-close-btn{min-width:44px;min-height:44px}
 }
 @media (max-width:380px){.brand-text h1{font-size:1rem}.nav-tab-btn{padding:10px 11px}}
+
+/* Language modes: make sure the Kerala toolkit hides the right languages */
+body.mode-de-only .tip-ml,body.mode-de-only .ex-ml,body.mode-de-only .ml-highlight,body.mode-de-only .subtitle-ml{display:none!important}
+body.mode-ml-only .tip-en,body.mode-ml-only .en-text,body.mode-ml-only .en-sample{display:none!important}
