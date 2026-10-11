@@ -23,8 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
     recordedAudioUrl: null,
 
     // Exam Timer State
-    timerSeconds: 180, // Default 3 mins for Teil 1
-    timerTotalSeconds: 180,
+    timerSeconds: 90, // Default 1.5 mins for Teil 1
+    timerTotalSeconds: 90,
     timerInterval: null,
     isTimerRunning: false,
 
@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="part-select-group">
               <label><span class="badge-label">Prüfungsteil:</span></label>
               <select id="examPartSelect" class="styled-select">
-                <option value="teil1" ${state.examPart === 'teil1' ? 'selected' : ''}>Teil 1: Präsentation (3 Min.)</option>
+                <option value="teil1" ${state.examPart === 'teil1' ? 'selected' : ''}>Teil 1: Präsentation (1,5 Min.)</option>
                 <option value="teil2" ${state.examPart === 'teil2' ? 'selected' : ''}>Teil 2: Diskussion (5 Min.)</option>
                 <option value="teil3" ${state.examPart === 'teil3' ? 'selected' : ''}>Teil 3: Problemlösung (5 Min.)</option>
               </select>
@@ -484,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="timer-display-group">
                 <span class="timer-icon"></span>
                 <span class="timer-digits" id="examTimerDisplay">${formatTimerDigits(state.timerSeconds)}</span>
-                <span class="timer-label-part" id="examTimerLabel">${state.examPart === 'teil1' ? 'Teil 1 (3 Min.)' : 'Teil 2/3 (5 Min.)'}</span>
+                <span class="timer-label-part" id="examTimerLabel">${state.examPart === 'teil1' ? 'Teil 1 (1,5 Min.)' : 'Teil 2/3 (5 Min.)'}</span>
               </div>
               <div class="timer-action-buttons">
                 <button class="btn-timer-ctrl ${state.isTimerRunning ? 'timer-running' : ''}" id="btnToggleTimer">
@@ -603,7 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getExaminerIntroSpeech(part, task) {
     if (part === 'teil1') {
-      return `Guten Tag! Willkommen zum ersten Teil Ihrer mündlichen telc B2 Prüfung. Bitte beginnen Sie nun mit Ihrer Präsentation zum Thema "${task.title}". Sie haben etwa 2 bis 3 Minuten Zeit. Ich höre Ihnen aufmerksam zu.`;
+      return `Guten Tag! Willkommen zum ersten Teil Ihrer mündlichen telc B2 Prüfung. Bitte beginnen Sie nun mit Ihrer Präsentation zum Thema "${task.title}". Sie haben etwa eineinhalb Minuten Zeit. Ich höre Ihnen aufmerksam zu.`;
     } else if (part === 'teil2') {
       return `Kommen wir nun zu Teil 2 der Prüfung, der Diskussion. Wir sprechen über das Thema "${task.title}". Bitte stellen Sie Ihre Argumente dar und erklären Sie Ihren Standpunkt.`;
     } else {
@@ -613,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getExaminerIntroSpeechMl(part, task) {
     if (part === 'teil1') {
-      return `നമസ്കാരം! നിങ്ങളുടെ telc B2 വായ്മൊഴി പരീക്ഷയുടെ ആദ്യ ഭാഗത്തേക്ക് സ്വാഗതം. '${task.titleMl || task.title}' എന്ന വിഷയത്തെക്കുറിച്ച് നിങ്ങളുടെ പ്രസന്റേഷൻ ആരംഭിക്കുക. നിങ്ങൾക്ക് 2-3 മിനിറ്റ് സമയമുണ്ട്.`;
+      return `നമസ്കാരം! നിങ്ങളുടെ telc B2 വായ്മൊഴി പരീക്ഷയുടെ ആദ്യ ഭാഗത്തേക്ക് സ്വാഗതം. '${task.titleMl || task.title}' എന്ന വിഷയത്തെക്കുറിച്ച് നിങ്ങളുടെ പ്രസന്റേഷൻ ആരംഭിക്കുക. നിങ്ങൾക്ക് ഒന്നര മിനിറ്റ് സമയമുണ്ട്.`;
     } else if (part === 'teil2') {
       return `ഇനി രണ്ടാം ഭാഗമായ ചർച്ചയിലേക്ക് (Diskussion) കടക്കാം. '${task.titleMl || task.title}' എന്ന വിഷയത്തെക്കുറിച്ചാണ് ചർച്ച. നിങ്ങളുടെ അനുകൂല/പ്രതികൂല വാദങ്ങൾ അവതരിപ്പിക്കുക.`;
     } else {
@@ -623,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function getExaminerIntroSpeechEn(part, task) {
     if (part === 'teil1') {
-      return `Welcome to Part 1 of your telc B2 oral examination. Please start your presentation on the topic "${task.titleEn || task.title}". You have about 2 to 3 minutes. I am listening attentively.`;
+      return `Welcome to Part 1 of your telc B2 oral examination. Please start your presentation on the topic "${task.titleEn || task.title}". You have about one and a half minutes. I am listening attentively.`;
     } else if (part === 'teil2') {
       return `Now moving to Part 2: Discussion. We are discussing "${task.titleEn || task.title}". Please present your arguments and explain your point of view.`;
     } else {
@@ -677,7 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetExamTimer() {
     if (state.timerInterval) clearInterval(state.timerInterval);
     state.isTimerRunning = false;
-    const targetSeconds = state.examPart === 'teil1' ? 180 : 300;
+    const targetSeconds = state.examPart === 'teil1' ? 90 : 300;
     state.timerSeconds = targetSeconds;
     state.timerTotalSeconds = targetSeconds;
     updateTimerDisplay();
@@ -690,7 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updateTimerDisplay();
     } else {
       if (state.timerSeconds <= 0) {
-        state.timerSeconds = state.examPart === 'teil1' ? 180 : 300;
+        state.timerSeconds = state.examPart === 'teil1' ? 90 : 300;
       }
       state.isTimerRunning = true;
       updateTimerDisplay();
@@ -726,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnToggle.classList.toggle('timer-running', state.isTimerRunning);
     }
     if (label) {
-      label.textContent = state.examPart === 'teil1' ? 'Teil 1 (3 Min.)' : 'Teil 2/3 (5 Min.)';
+      label.textContent = state.examPart === 'teil1' ? 'Teil 1 (1,5 Min.)' : 'Teil 2/3 (5 Min.)';
     }
   }
 
@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     container.innerHTML = `
       <div class="studio-header">
         <h2>Teil 1: Präsentation (Themen & Struktur)</h2>
-        <p class="subtitle">Official telc B2 presentation topics with Malayalam outline & examiner questions (3 Minuten)</p>
+        <p class="subtitle">Official telc B2 presentation topics with Malayalam outline & examiner questions (1,5 Minuten)</p>
       </div>
 
       <div class="topics-accordion">
