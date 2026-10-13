@@ -68,7 +68,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-API-Version', '20261014d'); // trigger fresh Vercel serverless build
+  res.setHeader('X-API-Version', '20261014e'); // trigger fresh Vercel serverless build
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -174,11 +174,14 @@ Evaluate this candidate's performance thoroughly and return your response strict
     // 3. Provider Call
     if (effectiveProvider === 'gemini') {
       const candidateModels = [
-        'gemini-2.5-flash',
-        'gemini-flash-latest',
-        'gemini-2.5-flash-lite',
         'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-8b',
+        'gemini-1.5-pro',
+        'gemini-2.0-flash-exp',
+        'gemini-2.5-flash',
+        'gemini-flash-latest'
       ];
 
       const payload = {
@@ -196,43 +199,85 @@ Evaluate this candidate's performance thoroughly and return your response strict
         }
       };
 
-      let lastError = null;
-      for (const model of candidateModels) {
-        try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-          const resp = await fetch(geminiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+      const attempts = [];
 
-          if (resp.ok) {
-            const data = await resp.json();
-            let rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawContent) {
-              // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
-              rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-              try {
-                resultJson = JSON.parse(rawContent);
-                modelUsed = model;
+      async function tryGenerate(modelName) {
+        const cleanName = modelName.replace(/^models\//, '');
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${cleanName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const resp = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          let rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawContent) {
+            rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+            try {
+              const parsed = JSON.parse(rawContent);
+              return { success: true, parsed, model: cleanName };
+            } catch (pErr) {
+              return { success: false, error: `Parse error for ${cleanName}: ${pErr.message}` };
+            }
+          }
+          return { success: false, error: `Empty content from ${cleanName}` };
+        } else {
+          const errText = await resp.text();
+          return { success: false, error: `HTTP ${resp.status} for ${cleanName}: ${errText}` };
+        }
+      }
+
+      // Step 3a: Try candidate models
+      for (const model of candidateModels) {
+        const res = await tryGenerate(model);
+        if (res.success) {
+          resultJson = res.parsed;
+          modelUsed = res.model;
+          break;
+        } else {
+          attempts.push({ model, error: res.error });
+        }
+      }
+
+      // Step 3b: If static candidates failed, query ModelService.ListModels to find available models
+      if (!resultJson) {
+        try {
+          const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+          const listResp = await fetch(listUrl);
+          if (listResp.ok) {
+            const listData = await listResp.json();
+            const available = (listData.models || [])
+              .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+              .map(m => m.name.replace(/^models\//, ''));
+
+            attempts.push({ note: 'Dynamic model list retrieved', availableModels: available });
+
+            for (const dynamicModel of available) {
+              if (candidateModels.includes(dynamicModel)) continue; // already tried
+              const res = await tryGenerate(dynamicModel);
+              if (res.success) {
+                resultJson = res.parsed;
+                modelUsed = res.model;
                 break;
-              } catch (parseErr) {
-                lastError = `JSON parse error for ${model}: ${parseErr.message}`;
+              } else {
+                attempts.push({ model: dynamicModel, error: res.error });
               }
-            } else {
-              lastError = `Empty response from ${model}`;
             }
           } else {
-            const errText = await resp.text();
-            lastError = `Google Gemini (${model}): ${errText}`;
+            const listErr = await listResp.text();
+            attempts.push({ note: 'Failed to list models', status: listResp.status, error: listErr });
           }
-        } catch (err) {
-          lastError = err.message;
+        } catch (dynErr) {
+          attempts.push({ note: 'Error in dynamic model query', error: dynErr.message });
         }
       }
 
       if (!resultJson) {
-        throw new Error(lastError || 'All Gemini model endpoints failed');
+        const err = new Error('All Gemini model candidates failed');
+        err.attempts = attempts;
+        throw err;
       }
 
     } else if (effectiveProvider === 'groq') {
@@ -306,7 +351,8 @@ Evaluate this candidate's performance thoroughly and return your response strict
     console.error('AI Assessment endpoint error:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Error occurred while contacting AI service'
+      message: error.message || 'Error occurred while contacting AI service',
+      attempts: error.attempts || undefined
     });
   }
 }
