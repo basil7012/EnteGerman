@@ -848,11 +848,39 @@ document.addEventListener('DOMContentLoaded', () => {
       state.isTimerRunning = false;
       updateTimerDisplay();
     } else {
+      // Detect a fresh start (timer at full duration, not resuming from a pause)
+      const isFreshStart = state.timerSeconds >= (state.examPart === 'teil1' ? 90 : 300);
+
       if (state.timerSeconds <= 0) {
         state.timerSeconds = state.examPart === 'teil1' ? 90 : 300;
       }
       state.isTimerRunning = true;
       updateTimerDisplay();
+
+      // When starting fresh, switch to Teil 1 and speak the examiner intro
+      if (isFreshStart) {
+        // Always begin with Teil 1 on a fresh start
+        if (state.examPart !== 'teil1') {
+          state.examPart = 'teil1';
+          state.selectedTaskIndex = 0;
+          state.timerSeconds = 90;
+          state.timerTotalSeconds = 90;
+          updateTimerDisplay();
+          renderExaminerStage();
+          // Re-attach after re-render so timer continues correctly
+          const btnToggle = document.getElementById('btnToggleTimer');
+          if (btnToggle) {
+            btnToggle.classList.add('timer-running');
+            btnToggle.textContent = '⏸Pause';
+          }
+        }
+        // Speak the examiner's opening line for Teil 1
+        const currentTaskList = TELC_B2_DATA['teil1'];
+        const currentTask = currentTaskList[state.selectedTaskIndex] || currentTaskList[0];
+        const introSpeech = getExaminerIntroSpeech('teil1', currentTask);
+        speech.speak(introSpeech);
+      }
+
       state.timerInterval = setInterval(() => {
         if (state.timerSeconds > 0) {
           state.timerSeconds--;
