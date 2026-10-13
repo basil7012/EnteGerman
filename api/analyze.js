@@ -68,7 +68,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-API-Version', '20261014c'); // trigger fresh Vercel serverless build
+  res.setHeader('X-API-Version', '20261014d'); // trigger fresh Vercel serverless build
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -191,8 +191,8 @@ Evaluate this candidate's performance thoroughly and return your response strict
           }
         ],
         generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.25
+          temperature: 0.25,
+          maxOutputTokens: 4096
         }
       };
 
@@ -208,11 +208,19 @@ Evaluate this candidate's performance thoroughly and return your response strict
 
           if (resp.ok) {
             const data = await resp.json();
-            const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            let rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (rawContent) {
-              resultJson = JSON.parse(rawContent);
-              modelUsed = model;
-              break;
+              // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+              rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+              try {
+                resultJson = JSON.parse(rawContent);
+                modelUsed = model;
+                break;
+              } catch (parseErr) {
+                lastError = `JSON parse error for ${model}: ${parseErr.message}`;
+              }
+            } else {
+              lastError = `Empty response from ${model}`;
             }
           } else {
             const errText = await resp.text();
