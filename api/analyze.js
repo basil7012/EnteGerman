@@ -68,6 +68,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-API-Version', '20261014c'); // trigger fresh Vercel serverless build
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
