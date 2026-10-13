@@ -132,33 +132,37 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
     }
 
     if (p === 'gemini') {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
+      const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       const payload = {
         contents: [{ role: 'user', parts: [{ text: 'Respond with JSON: {"status":"ok"}' }] }],
         generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
       };
 
-      let resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!resp.ok) {
-        // Fallback check to gemini-1.5-flash
-        const fbUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-        resp = await fetch(fbUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+      let successModel = null;
+      let lastErrText = '';
+      for (const m of candidateModels) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(key)}`;
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (resp.ok) {
+            successModel = m;
+            break;
+          } else {
+            lastErrText = await resp.text();
+          }
+        } catch (e) {
+          lastErrText = e.message;
+        }
       }
 
-      if (!resp.ok) {
-        const err = await resp.text();
-        throw new Error(`Google Gemini Fehler (${resp.status}): ${err}`);
+      if (!successModel) {
+        throw new Error(`Google Gemini Fehler: ${lastErrText}`);
       }
-      return { ok: true, provider: 'Google Gemini' };
+      return { ok: true, provider: `Google Gemini (${successModel})` };
 
     } else if (p === 'groq') {
       const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -306,7 +310,13 @@ Evaluate this candidate's performance thoroughly and return your response strict
 
   async callGeminiDirect(transcript, examPart, taskContext, apiKey) {
     const prompt = this.buildUserPrompt(transcript, examPart, taskContext);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const candidateModels = [
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash'
+    ];
     
     const payload = {
       contents: [
@@ -321,28 +331,31 @@ Evaluate this candidate's performance thoroughly and return your response strict
       }
     };
 
-    let resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let lastError = null;
+    for (const model of candidateModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-    if (!resp.ok) {
-      const fbUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-      resp = await fetch(fbUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!resp.ok) {
-        const err = await resp.text();
-        throw new Error(`Gemini direct call error: ${err}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (raw) {
+            return JSON.parse(raw);
+          }
+        } else {
+          lastError = await resp.text();
+        }
+      } catch (err) {
+        lastError = err.message;
       }
     }
 
-    const data = await resp.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return JSON.parse(raw);
+    throw new Error(`Gemini direct call error: ${lastError || 'All models failed'}`);
   }
 
   async callGroqDirect(transcript, examPart, taskContext, apiKey) {

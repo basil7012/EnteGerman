@@ -312,13 +312,6 @@ class TelcExaminer {
     const text = userText.trim();
     const wordCount = text.split(/\s+/).filter(Boolean).length;
 
-    // Fast-path: Too short for B2 analysis
-    if (wordCount < 10) {
-      const localFindings = this.evaluateResponse(text, taskType, taskContext);
-      localFindings.isAIEvaluated = false;
-      return localFindings;
-    }
-
     // Attempt AI evaluation if service is available
     if (typeof window !== 'undefined' && window.aiService && window.aiService.isAIEnabled()) {
       try {

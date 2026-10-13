@@ -168,12 +168,18 @@ Evaluate this candidate's performance thoroughly and return your response strict
 `;
 
     let resultJson = null;
+    let modelUsed = 'gemini-2.5-flash';
 
     // 3. Provider Call
     if (effectiveProvider === 'gemini') {
-      // Use Gemini 2.0 Flash (with 1.5 Flash fallback)
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-      
+      const candidateModels = [
+        'gemini-2.5-flash',
+        'gemini-flash-latest',
+        'gemini-2.5-flash-lite',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash'
+      ];
+
       const payload = {
         contents: [
           {
@@ -189,32 +195,35 @@ Evaluate this candidate's performance thoroughly and return your response strict
         }
       };
 
-      const resp = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let lastError = null;
+      for (const model of candidateModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+          const resp = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
 
-      if (!resp.ok) {
-        // Fallback to gemini-1.5-flash if 2.0 isn't available
-        const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-        const fallbackResp = await fetch(fallbackUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!fallbackResp.ok) {
-          const errText = await fallbackResp.text();
-          throw new Error(`Google Gemini API error (${fallbackResp.status}): ${errText}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawContent) {
+              resultJson = JSON.parse(rawContent);
+              modelUsed = model;
+              break;
+            }
+          } else {
+            const errText = await resp.text();
+            lastError = `Google Gemini (${model}): ${errText}`;
+          }
+        } catch (err) {
+          lastError = err.message;
         }
-        const data = await fallbackResp.json();
-        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        resultJson = JSON.parse(rawContent);
-      } else {
-        const data = await resp.json();
-        const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        resultJson = JSON.parse(rawContent);
+      }
+
+      if (!resultJson) {
+        throw new Error(lastError || 'All Gemini model endpoints failed');
       }
 
     } else if (effectiveProvider === 'groq') {
@@ -280,7 +289,8 @@ Evaluate this candidate's performance thoroughly and return your response strict
     return res.status(200).json({
       success: true,
       analysis: resultJson,
-      provider: effectiveProvider
+      provider: effectiveProvider === 'gemini' ? `Google Gemini (${modelUsed})` : effectiveProvider,
+      modelUsed
     });
 
   } catch (error) {
