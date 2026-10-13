@@ -91,7 +91,11 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
 
   isAIEnabled() {
     const s = this.getSettings();
-    return s.enabled;
+    if (!s.enabled) return false;
+    // Also count as enabled if the server has a key configured (cached from prior check)
+    if (this._cachedServerStatus && this._cachedServerStatus.serverConfigured) return true;
+    // If no server status cached yet, return true so the attempt happens (server check will clarify)
+    return true;
   }
 
   hasClientKey() {
@@ -225,22 +229,8 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
       clientApiKey: settings.apiKey || null
     };
 
-    // Strategy 1: If client has a direct API key, we can try direct fetch for zero-latency
-    // (Especially for Gemini, which supports direct browser CORS and has a free tier)
-    if (settings.apiKey && settings.provider === 'gemini') {
-      try {
-        const directResult = await this.callGeminiDirect(studentTranscript, examPart, taskContext, settings.apiKey);
-        return {
-          success: true,
-          analysis: directResult,
-          provider: 'Google Gemini 2.0 Flash (Client Direct)'
-        };
-      } catch (directErr) {
-        console.warn('Direct Gemini fetch encountered error, trying server fallback:', directErr);
-      }
-    }
-
-    // Strategy 2: Call server endpoint /api/analyze
+    // Strategy 1 (PRIORITY): Always try the server /api/analyze endpoint first.
+    // The server may have its own GEMINI_API_KEY configured even without a client key.
     try {
       const serverResp = await fetch('/api/analyze', {
         method: 'POST',
@@ -254,7 +244,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
           return {
             success: true,
             analysis: data.analysis,
-            provider: `${data.provider || settings.provider} (Serverless API)`
+            provider: data.provider || 'Google Gemini (Serverless)'
           };
         }
       }
@@ -262,14 +252,36 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
       if (serverResp.status === 400) {
         const errJson = await serverResp.json().catch(() => ({}));
         if (errJson.noKeyConfigured) {
-          return { success: false, fallbackNeeded: true, reason: 'NO_KEY_CONFIGURED' };
+          // Server has no key - fall through to client-key strategies
+          console.info('Server has no AI key configured, trying client key...');
+        } else {
+          // Server responded with a real error (model error, etc.)
+          console.warn('Server /api/analyze returned error:', errJson);
+          return { success: false, fallbackNeeded: true, reason: 'SERVER_ERROR' };
         }
+      } else if (!serverResp.ok) {
+        console.warn('Server /api/analyze non-OK response:', serverResp.status);
+        return { success: false, fallbackNeeded: true, reason: 'SERVER_ERROR' };
       }
     } catch (serverErr) {
-      console.warn('Server endpoint /api/analyze not available or network error:', serverErr);
+      console.warn('Server endpoint /api/analyze not reachable:', serverErr.message);
     }
 
-    // Strategy 3: If client has API key for groq/openai, try direct client call
+    // Strategy 2: Client has a direct Gemini key - try direct browser fetch
+    if (settings.apiKey && settings.provider === 'gemini') {
+      try {
+        const directResult = await this.callGeminiDirect(studentTranscript, examPart, taskContext, settings.apiKey);
+        return {
+          success: true,
+          analysis: directResult,
+          provider: 'Google Gemini (Client Direct)'
+        };
+      } catch (directErr) {
+        console.warn('Direct Gemini fetch failed:', directErr.message);
+      }
+    }
+
+    // Strategy 3: Client has Groq/OpenAI key
     if (settings.apiKey) {
       try {
         if (settings.provider === 'groq') {
@@ -280,14 +292,14 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
           return { success: true, analysis: directOpenAI, provider: 'OpenAI GPT-4o-mini (Client Direct)' };
         }
       } catch (err) {
-        console.warn('Direct client API call failed:', err);
+        console.warn('Direct client API call failed:', err.message);
       }
     }
 
     return {
       success: false,
       fallbackNeeded: true,
-      reason: settings.apiKey ? 'API_CALL_FAILED' : 'NO_KEY_CONFIGURED'
+      reason: 'NO_KEY_CONFIGURED'
     };
   }
 
