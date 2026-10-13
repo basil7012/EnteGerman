@@ -17,10 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Examiner Simulation State
     examPart: 'teil1', // 'teil1', 'teil2', 'teil3'
+    examPhase: 'warmup', // 'warmup' | 'intro' | 'presenting' | 'partner-qa' | 'feedback'
     selectedTaskIndex: 0,
     transcript: '',
     isListening: false,
     recordedAudioUrl: null,
+    partnerQaAnswer: '',
 
     // Exam Timer State
     timerSeconds: 90, // Default 1.5 mins for Teil 1
@@ -592,6 +594,76 @@ document.addEventListener('DOMContentLoaded', () => {
      ======================================================== */
   const examinerContainer = document.getElementById('examinerStage');
 
+  // ── Phase helpers ────────────────────────────────────────────────────────
+  function setExamPhase(phase) {
+    state.examPhase = phase;
+    renderExaminerStage();
+  }
+
+  function buildPhaseBar(currentPhase) {
+    const phases = [
+      { id: 'warmup',     label: 'Begrüßung' },
+      { id: 'intro',      label: 'Aufgabe lesen' },
+      { id: 'presenting', label: 'Präsentation' },
+      { id: 'partner-qa', label: 'Partner-Frage' },
+      { id: 'feedback',   label: 'Feedback' }
+    ];
+    const idx = phases.findIndex(p => p.id === currentPhase);
+    return `
+      <div class="exam-phase-bar">
+        ${phases.map((p, i) => `
+          <div class="phase-step ${i < idx ? 'phase-done' : (i === idx ? 'phase-active' : 'phase-pending')}">
+            <div class="phase-dot">${i < idx ? '✓' : (i + 1)}</div>
+            <div class="phase-label">${p.label}</div>
+          </div>
+          ${i < phases.length - 1 ? `<div class="phase-connector ${i < idx ? 'connector-done' : ''}"></div>` : ''}
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function buildExaminerSharedHeader(currentTaskList, isPrem) {
+    return `
+      <div class="examiner-header">
+        <div class="examiner-profile">
+          <div class="examiner-avatar-pulse">
+            <span class="avatar-icon"></span>
+            <span class="pulse-ring"></span>
+          </div>
+          <div>
+            <div class="examiner-name-badge">
+              <span class="name">${examiner.name}</span>
+              <span class="badge telc-badge">telc B2 Prüferin</span>
+              ${isPrem ? '<span class="badge badge-prem">Premium Active</span>' : '<span class="badge badge-free">Free Mode (2/day)</span>'}
+            </div>
+            <p class="examiner-subtitle">Offizielle Prüfungssimulation • Official Telc B2 Examiner Mode</p>
+          </div>
+        </div>
+        <div class="examiner-controls-top">
+          <div class="part-select-group">
+            <label><span class="badge-label">Prüfungsteil:</span></label>
+            <select id="examPartSelect" class="styled-select">
+              <option value="teil1" ${state.examPart === 'teil1' ? 'selected' : ''}>Teil 1: Präsentation (1,5 Min.)</option>
+              <option value="teil2" ${state.examPart === 'teil2' ? 'selected' : ''}>Teil 2: Diskussion (5 Min.)</option>
+              <option value="teil3" ${state.examPart === 'teil3' ? 'selected' : ''}>Teil 3: Problemlösung (5 Min.)</option>
+            </select>
+          </div>
+          <div class="task-select-group">
+            <label><span class="badge-label">Thema / Aufgabe:</span></label>
+            <select id="taskSelect" class="styled-select">
+              ${currentTaskList.map((t, i) => `
+                <option value="${i}" ${i === state.selectedTaskIndex ? 'selected' : ''}>
+                  ${t.title} ${(!isPrem && i > 1) ? '(Premium)' : ''}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+          <button class="btn-timer-ctrl btn-timer-reset" id="btnRestartExam" title="Prüfung neu starten">↺ Neu starten</button>
+        </div>
+      </div>
+    `;
+  }
+
   function renderExaminerStage() {
     if (!examinerContainer) return;
 
@@ -599,163 +671,333 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTask = currentTaskList[state.selectedTaskIndex] || currentTaskList[0];
     const isPrem = auth.isPremium();
 
-    let html = `
+    // Teil 2 & 3: use classic flat layout
+    if (state.examPart !== 'teil1') {
+      renderClassicExaminerLayout(currentTask, isPrem, currentTaskList);
+      return;
+    }
+
+    // ── PHASE-BASED TEIL 1 FLOW ──────────────────────────────────────────
+    let phaseHtml = '';
+    if (state.examPhase === 'warmup')      phaseHtml = renderPhaseWarmup(currentTask);
+    else if (state.examPhase === 'intro')       phaseHtml = renderPhaseIntro(currentTask);
+    else if (state.examPhase === 'presenting')  phaseHtml = renderPhasePresenting(currentTask);
+    else if (state.examPhase === 'partner-qa')  phaseHtml = renderPhasePartnerQa(currentTask);
+    else if (state.examPhase === 'feedback')    phaseHtml = renderPhaseFeedbackShell(currentTask);
+
+    examinerContainer.innerHTML = `
       <div class="examiner-card glass-panel">
-        <div class="examiner-header">
-          <div class="examiner-profile">
-            <div class="examiner-avatar-pulse">
-              <span class="avatar-icon"></span>
-              <span class="pulse-ring"></span>
-            </div>
-            <div>
-              <div class="examiner-name-badge">
-                <span class="name">${examiner.name}</span>
-                <span class="badge telc-badge">telc B2 Prüferin</span>
-                ${isPrem ? '<span class="badge badge-prem">Premium Active</span>' : '<span class="badge badge-free">Free Mode (2/day)</span>'}
+        ${buildExaminerSharedHeader(currentTaskList, isPrem)}
+        ${buildPhaseBar(state.examPhase)}
+        <div class="phase-content">${phaseHtml}</div>
+      </div>
+    `;
+    attachExaminerListeners(currentTask);
+  }
+
+  // ── Phase renderers ──────────────────────────────────────────────────────
+
+  function renderPhaseWarmup(task) {
+    const warmupQs = [
+      { de: 'Wie geht es Ihnen heute?', ml: 'ഇന്ന് എങ്ങനെ ഉണ്ട്?', en: 'How are you today?' },
+      { de: 'Wie war Ihre Anreise?', ml: 'യാത്ര എങ്ങനെ ഉണ്ടായിരുന്നു?', en: 'How was your journey here?' },
+      { de: 'Seit wann lernen Sie Deutsch?', ml: 'നിങ്ങൾ എന്നു മുതൽ ജർമ്മൻ പഠിക്കുന്നു?', en: 'Since when have you been learning German?' }
+    ];
+    return `
+      <div class="phase-warmup animate-fade-in">
+        <div class="examiner-bubble">
+          <div class="bubble-meta">
+            <strong>${examiner.name} sagt:</strong>
+            <button class="small-audio-btn" id="btnSpeakWarmup">Hören</button>
+            <span class="badge badge-free" style="font-size:0.7rem;margin-left:6px;">Nicht bewertet / Not graded</span>
+          </div>
+          <p class="examiner-speech-text" id="examinerSpeechText">
+            Herzlich willkommen! Ich bin ${examiner.name}, Ihre telc B2 Prüferin für heute. Bitte nehmen Sie Platz. Bevor wir mit der offiziellen Prüfung beginnen, möchte ich Sie kurz kennenlernen.
+          </p>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">ഹൃദ്യമായ സ്വാഗതം! ഞാൻ ${examiner.name}, ഇന്നത്തെ telc B2 പരീക്ഷക. ഔദ്യോഗിക പരീക്ഷ ആരംഭിക്കുന്നതിന് മുമ്പ് ചില ചെറിയ ചോദ്യങ്ങൾ ചോദിക്കട്ടെ (ഇവ ഗ്രേഡ് ചെയ്യില്ല).</div>` : ''}
+          <div class="en-subtext">Welcome! I'm ${examiner.name}, your telc B2 examiner. Before the official exam begins, I'd like to get to know you briefly. (This warm-up is not graded.)</div>
+        </div>
+        <div class="warmup-questions-grid">
+          ${warmupQs.map((q, i) => `
+            <div class="warmup-q-card">
+              <div class="warmup-q-num">${i + 1}</div>
+              <div class="warmup-q-body">
+                <p class="warmup-q-de">${q.de}
+                  <button class="mini-speak" onclick="speakGerman('${escapeForAttr(q.de)}')"></button>
+                </p>
+                ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<p class="warmup-q-ml">${q.ml}</p>` : ''}
+                <p class="warmup-q-en">${q.en}</p>
               </div>
-              <p class="examiner-subtitle">Offizielle Prüfungssimulation • Official Telc B2 Examiner Mode</p>
+            </div>
+          `).join('')}
+        </div>
+        <div class="warmup-tip-box">
+          <span class="tip-label">💡 Tipp:</span>
+          <span class="de-text">Diese Einstiegsphase ist nicht bewertet — antworten Sie entspannt auf Deutsch!</span>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? '<span class="ml-text"> ഈ ഭാഗം ഗ്രേഡ് ചെയ്യില്ല — ആത്മവിശ്വാസത്തോടെ ജർമ്മനിൽ ഉത്തരം പറയുക.</span>' : ''}
+        </div>
+        <div class="phase-action-row">
+          <button class="btn-phase-next" id="btnWarmupNext">
+            Weiter zur Aufgabe → (Proceed to Task)
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPhaseIntro(task) {
+    const introSpeech = getExaminerIntroSpeech('teil1', task);
+    return `
+      <div class="phase-intro animate-fade-in">
+        <div class="examiner-bubble">
+          <div class="bubble-meta">
+            <strong>${examiner.name} sagt:</strong>
+            <button class="small-audio-btn" id="btnSpeakExaminerPrompt">Hören</button>
+          </div>
+          <p class="examiner-speech-text" id="examinerSpeechText">${introSpeech}</p>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">${getExaminerIntroSpeechMl('teil1', task)}</div>` : ''}
+          <div class="en-subtext">${getExaminerIntroSpeechEn('teil1', task)}</div>
+        </div>
+        <div class="task-briefing-box">
+          <div class="briefing-header">
+            <h4><span class="icon"></span> ${task.title}</h4>
+            <button class="audio-btn" onclick="speakGerman('${escapeForAttr(task.prompt || '')}')">Vorlesen (Read Task)</button>
+          </div>
+          <p class="de-text task-body">${nl2br(task.prompt || task.contextText || task.situation)}</p>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-box"><span class="lang-tag">മലയാളം വിവർത്തനം:</span><p class="ml-text">${nl2br(task.titleMl || task.contextTextMl || '')}</p></div>` : ''}
+          <div class="en-box"><span class="lang-tag en-tag">English Guidance:</span><p class="en-text">${nl2br(task.titleEn || task.contextTextEn || '')}</p></div>
+        </div>
+        <div class="structure-guide-box">
+          <div class="structure-guide-title">📋 Ihre Präsentationsstruktur — 4 Schritte (4-Part Structure):</div>
+          <div class="structure-steps-mini">
+            <div class="struct-step"><span class="struct-num">1</span><span>Einleitung — Begrüßen, Thema vorstellen (Introduction — greet, state topic)</span></div>
+            <div class="struct-step"><span class="struct-num">2</span><span>Inhalt — Kurzüberblick geben (Content — brief summary/story)</span></div>
+            <div class="struct-step"><span class="struct-num">3</span><span>Persönlicher Eindruck — Bedeutung erklären (Personal significance)</span></div>
+            <div class="struct-step"><span class="struct-num">4</span><span>Schluss — Zusammenfassen & danken (Conclusion — wrap up)</span></div>
+          </div>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? '<p class="struct-ml-note">💡 ഈ 4 ഭാഗങ്ങളും ഉൾക്കൊള്ളുന്ന അവതരണം B2 ഗ്രേഡ് ഉറപ്പ് ചെയ്യും.</p>' : ''}
+        </div>
+        <div class="phase-action-row">
+          <p class="pre-start-note">⏱️ Sie haben <strong>1 Minute 30 Sekunden</strong>. Der Timer startet, wenn Sie auf „Jetzt sprechen" klicken.</p>
+          <button class="btn-phase-start" id="btnStartPresentation">
+            🎙️ Jetzt sprechen — Timer starten (Start Presentation)
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPhasePresenting(task) {
+    return `
+      <div class="phase-presenting animate-fade-in">
+        <div class="presenting-live-banner">
+          <div class="live-dot-group">
+            <span class="live-dot"></span>
+            <span class="live-label">LIVE — Präsentation läuft</span>
+          </div>
+          <div class="timer-display-group timer-display-large">
+            <span class="timer-digits" id="examTimerDisplay">${formatTimerDigits(state.timerSeconds)}</span>
+            <span class="timer-label-part">Teil 1 — 1,5 Min.</span>
+          </div>
+          <button class="btn-timer-ctrl ${state.isTimerRunning ? 'timer-running' : ''}" id="btnToggleTimer">
+            ${state.isTimerRunning ? '⏸ Pause' : '▶ Fortsetzen'}
+          </button>
+        </div>
+        <div class="task-reminder-chip">
+          <strong>Thema:</strong> ${task.title}
+          <button class="mini-speak" onclick="speakGerman('${escapeForAttr(task.prompt || '')}')" title="Aufgabe vorlesen"></button>
+        </div>
+        <details class="structure-guide-collapsible">
+          <summary>📋 Struktur-Erinnerung anzeigen (Show 4-Part Structure)</summary>
+          <div class="structure-steps-mini">
+            <div class="struct-step"><span class="struct-num">1</span><span>Einleitung — Thema vorstellen</span></div>
+            <div class="struct-step"><span class="struct-num">2</span><span>Hauptteil — Geschichte / Inhalt</span></div>
+            <div class="struct-step"><span class="struct-num">3</span><span>Persönliche Bedeutung</span></div>
+            <div class="struct-step"><span class="struct-num">4</span><span>Schluss — Danke & Zusammenfassung</span></div>
+          </div>
+        </details>
+        <div class="student-response-panel">
+          <div class="response-header">
+            <h4><span class="icon"></span> Ihre Präsentation${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / നിങ്ങളുടെ അവതരണം' : ''}</h4>
+            <div class="recording-controls">
+              <button class="btn-primary" id="btnVoiceRecord">
+                <span id="micIcon"></span> <span id="micBtnText">Sprechen (Start Mic)</span>
+              </button>
+              <button class="btn-secondary" id="btnAudioSaveRecord">⏺Aufnahme für Analyse (Record Audio)</button>
+              <button class="btn-sample-insert" id="btnPasteSampleAnswer" title="Musterantwort einfügen">Musterantwort (Sample Answer)</button>
             </div>
           </div>
-
-          <div class="examiner-controls-top">
-            <div class="part-select-group">
-              <label><span class="badge-label">Prüfungsteil:</span></label>
-              <select id="examPartSelect" class="styled-select">
-                <option value="teil1" ${state.examPart === 'teil1' ? 'selected' : ''}>Teil 1: Präsentation (1,5 Min.)</option>
-                <option value="teil2" ${state.examPart === 'teil2' ? 'selected' : ''}>Teil 2: Diskussion (5 Min.)</option>
-                <option value="teil3" ${state.examPart === 'teil3' ? 'selected' : ''}>Teil 3: Problemlösung (5 Min.)</option>
-              </select>
+          <div id="micAlertBox" class="mic-alert-box" style="display: none;"></div>
+          <div id="listeningIndicator" class="listening-indicator" style="display: none;">
+            <div class="sound-wave"><span></span><span></span><span></span><span></span><span></span></div>
+            <span class="listening-text" id="liveWaveText">Zuhören... Bitte sprechen Sie auf Deutsch (Listening...)</span>
+          </div>
+          <div class="input-container">
+            <textarea id="userResponseInput" rows="6" placeholder="Sprechen Sie in Ihr Mikrofon oder tippen Sie Ihre Präsentation hier ein... (Type or speak your B2 presentation here...)">${escapeHtml(state.transcript || '')}</textarea>
+          </div>
+          <div class="response-footer">
+            <div class="word-counter-badge"><span id="responseWordCount">0</span> Wörter (B2 Richtwert: 80-140 Wörter für 1,5 Min.)</div>
+            <div class="action-buttons">
+              <button class="btn-clear" id="btnClearResponse">Löschen</button>
+              <button class="btn-evaluate" id="btnEvaluateResponse">Präsentation abgeben → Partner-Frage</button>
             </div>
-
-            <div class="task-select-group">
-              <label><span class="badge-label">Thema / Aufgabe:</span></label>
-              <select id="taskSelect" class="styled-select">
-                ${currentTaskList.map((t, i) => `
-                  <option value="${i}" ${i === state.selectedTaskIndex ? 'selected' : ''}>
-                    ${t.title} ${(!isPrem && i > 1) ? '(Premium)' : ''}
-                  </option>
-                `).join('')}
-              </select>
-            </div>
-
-            <!-- Authentic Telc Exam Timer Widget -->
-            <div class="exam-timer-widget">
-              <div class="timer-display-group">
-                <span class="timer-icon"></span>
-                <span class="timer-digits" id="examTimerDisplay">${formatTimerDigits(state.timerSeconds)}</span>
-                <span class="timer-label-part" id="examTimerLabel">${state.examPart === 'teil1' ? 'Teil 1 (1,5 Min.)' : 'Teil 2/3 (5 Min.)'}</span>
-              </div>
-              <div class="timer-action-buttons">
-                <button class="btn-timer-ctrl ${state.isTimerRunning ? 'timer-running' : ''}" id="btnToggleTimer">
-                  ${state.isTimerRunning ? '⏸Pause' : '▶Start'}
-                </button>
-                <button class="btn-timer-ctrl btn-timer-reset" id="btnResetTimer" title="Zeit zurücksetzen">
-                  Reset
-                </button>
-              </div>
-            </div>
+          </div>
+          <div id="audioPlaybackBox" class="audio-playback-box" style="display: none;">
+            <label>Ihre Audioaufnahme (Listen to your pronunciation):</label>
+            <audio id="recordedAudioPlayer" controls></audio>
           </div>
         </div>
+        <div class="quick-phrases-drawer">
+          <details>
+            <summary>Empfohlene B2 Redemittel für Teil 1${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' (with Malayalam)' : ''}</summary>
+            <div class="quick-phrases-grid">${getQuickPhrasesForPart('teil1')}</div>
+          </details>
+        </div>
+      </div>
+    `;
+  }
 
-        <!-- Task Briefing Box with Trilingual Guidance -->
+  function renderPhasePartnerQa(task) {
+    const q = (task.examinerQuestions && task.examinerQuestions.length > 0)
+      ? task.examinerQuestions[0]
+      : { question: 'Haben Sie noch etwas zu Ihrer Präsentation hinzuzufügen?', questionMl: 'നിങ്ങളുടെ അവതരണത്തിൽ എന്തെങ്കിലും കൂട്ടിച്ചേർക്കാൻ ആഗ്രഹിക്കുന്നുണ്ടോ?', questionEn: 'Would you like to add anything to your presentation?', sampleAnswer: 'Vielen Dank für Ihre Frage. Ich möchte noch ergänzen, dass...', sampleAnswerMl: 'ചോദ്യത്തിന് നന്ദി. ഞാൻ കൂടുതൽ ചേർക്കാൻ ആഗ്രഹിക്കുന്നു...', sampleAnswerEn: 'Thank you for your question. I would like to add that...' };
+    return `
+      <div class="phase-partner-qa animate-fade-in">
+        <div class="qa-phase-banner">
+          <span class="qa-phase-icon">👥</span>
+          <div>
+            <strong>Partner-Nachfrage (Partner Follow-up Question)</strong>
+            <p>Ihre Präsentation ist beendet. Ihr Partner / Ihre Partnerin stellt jetzt eine Nachfrage.</p>
+            ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? '<p class="ml-text">അവതരണം കഴിഞ്ഞു. Partner ഒരു ചോദ്യം ചോദിക്കുന്നു — ഇത് B2 പരീക്ഷയിൽ നിർബന്ധ ഭാഗമാണ്.</p>' : ''}
+          </div>
+        </div>
+        <div class="partner-question-card">
+          <div class="partner-q-label">Partner sagt:</div>
+          <p class="partner-q-text" id="partnerQText">${escapeHtml(q.question)}</p>
+          <button class="small-audio-btn" id="btnSpeakPartnerQ">Frage anhören</button>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">${escapeHtml(q.questionMl || '')}</div>` : ''}
+          <div class="en-subtext">${escapeHtml(q.questionEn || '')}</div>
+        </div>
+        <div class="qa-response-panel">
+          <h4>Ihre Antwort auf die Partner-Frage:</h4>
+          <div class="recording-controls">
+            <button class="btn-primary" id="btnVoiceRecord">
+              <span id="micIcon"></span> <span id="micBtnText">Sprechen (Start Mic)</span>
+            </button>
+          </div>
+          <div id="micAlertBox" class="mic-alert-box" style="display: none;"></div>
+          <div id="listeningIndicator" class="listening-indicator" style="display: none;">
+            <div class="sound-wave"><span></span><span></span><span></span><span></span><span></span></div>
+            <span class="listening-text" id="liveWaveText">Zuhören... (Listening...)</span>
+          </div>
+          <textarea id="qaAnswerInput" rows="4" placeholder="Antworten Sie auf die Frage Ihres Partners auf Deutsch... (Answer your partner's question in German...)">${escapeHtml(state.partnerQaAnswer || '')}</textarea>
+          <div class="qa-footer">
+            <details class="qa-sample-toggle">
+              <summary>Musterantwort anzeigen (Show sample answer)</summary>
+              <div class="sample-ans-box">
+                <p><strong>Musterantwort:</strong> ${escapeHtml(q.sampleAnswer)}</p>
+                ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<p class="ml-text">${escapeHtml(q.sampleAnswerMl || '')}</p>` : ''}
+                ${q.sampleAnswerEn ? `<p class="en-text">${escapeHtml(q.sampleAnswerEn)}</p>` : ''}
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(q.sampleAnswer)}')">Anhören</button>
+                  <button class="audio-btn" id="btnUseQaSampleAnswer" type="button">Als Antwort einfügen</button>
+                </div>
+              </div>
+            </details>
+            <button class="btn-evaluate" id="btnSubmitQaAnswer">Antwort abgeben & Gesamtbewertung erhalten</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPhaseFeedbackShell() {
+    return `
+      <div class="phase-feedback animate-fade-in">
+        <div id="feedbackContainer" class="feedback-container"></div>
+        <div class="phase-action-row" style="margin-top:24px;">
+          <button class="btn-phase-next" id="btnGoTeil2">Weiter zu Teil 2: Diskussion →</button>
+          <button class="btn-timer-ctrl" id="btnRestartTeil1">↺ Teil 1 wiederholen</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── Classic flat layout for Teil 2 & 3 ──────────────────────────────────
+  function renderClassicExaminerLayout(currentTask, isPrem, currentTaskList) {
+    const html = `
+      <div class="examiner-card glass-panel">
+        ${buildExaminerSharedHeader(currentTaskList, isPrem)}
+        <div class="exam-timer-widget" style="margin:12px 0;">
+          <div class="timer-display-group">
+            <span class="timer-digits" id="examTimerDisplay">${formatTimerDigits(state.timerSeconds)}</span>
+            <span class="timer-label-part">Teil 2/3 (5 Min.)</span>
+          </div>
+          <div class="timer-action-buttons">
+            <button class="btn-timer-ctrl ${state.isTimerRunning ? 'timer-running' : ''}" id="btnToggleTimer">
+              ${state.isTimerRunning ? '⏸ Pause' : '▶ Start'}
+            </button>
+            <button class="btn-timer-ctrl btn-timer-reset" id="btnResetTimer">Reset</button>
+          </div>
+        </div>
         <div class="task-briefing-box">
           <div class="briefing-header">
             <h4><span class="icon"></span> ${currentTask.title}</h4>
-            <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.prompt || currentTask.contextText || currentTask.situation)}')">
-              Vorlesen (Read Task)
-            </button>
+            <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.prompt || currentTask.contextText || currentTask.situation || '')}')">Vorlesen (Read Task)</button>
           </div>
           <p class="de-text task-body">${nl2br(currentTask.prompt || currentTask.contextText || currentTask.situation)}</p>
-          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-box"><span class="lang-tag">മലയാളം വിവർത്തനം:</span><p class="ml-text">${nl2br(currentTask.titleMl || currentTask.contextTextMl || currentTask.situationMl)}</p></div>` : ''}
-          <div class="en-box">
-            <span class="lang-tag en-tag">English Guidance:</span>
-            <p class="en-text">${nl2br(currentTask.titleEn || currentTask.contextTextEn || currentTask.situationEn || '')}</p>
-          </div>
+          ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-box"><span class="lang-tag">മലയാളം വിവർത്തനം:</span><p class="ml-text">${nl2br(currentTask.titleMl || currentTask.contextTextMl || currentTask.situationMl || '')}</p></div>` : ''}
+          <div class="en-box"><span class="lang-tag en-tag">English Guidance:</span><p class="en-text">${nl2br(currentTask.titleEn || currentTask.contextTextEn || currentTask.situationEn || '')}</p></div>
         </div>
-
-        <!-- Examiner Speech Bubble -->
         <div class="dialogue-box">
           <div class="examiner-bubble">
             <div class="bubble-meta">
               <strong>${examiner.name} sagt:</strong>
               <button class="small-audio-btn" id="btnSpeakExaminerPrompt">Hören</button>
             </div>
-            <p class="examiner-speech-text" id="examinerSpeechText">
-              ${getExaminerIntroSpeech(state.examPart, currentTask)}
-            </p>
-            <div class="ml-subtext" id="examinerSpeechTextMl">
-              ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? getExaminerIntroSpeechMl(state.examPart, currentTask) : ''}
-            </div>
-            <div class="en-subtext" id="examinerSpeechTextEn">
-              ${getExaminerIntroSpeechEn(state.examPart, currentTask)}
-            </div>
+            <p class="examiner-speech-text" id="examinerSpeechText">${getExaminerIntroSpeech(state.examPart, currentTask)}</p>
+            ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">${getExaminerIntroSpeechMl(state.examPart, currentTask)}</div>` : ''}
+            <div class="en-subtext">${getExaminerIntroSpeechEn(state.examPart, currentTask)}</div>
           </div>
         </div>
-
-        <!-- Student Input & Speaking Studio -->
         <div class="student-response-panel">
           <div class="response-header">
             <h4><span class="icon"></span> Ihre Antwort (Your Response${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / നിങ്ങളുടെ മറുപടി' : ''})</h4>
             <div class="recording-controls">
-              <button class="btn-primary" id="btnVoiceRecord">
-                <span id="micIcon"></span> <span id="micBtnText">Sprechen (Start Mic)</span>
-              </button>
-              <button class="btn-secondary" id="btnAudioSaveRecord">
-                ⏺Aufnahme für Analyse (Record Audio)
-              </button>
-              <button class="btn-sample-insert" id="btnPasteSampleAnswer" title="Musterantwort einfügen">
-                Musterantwort (Sample Answer)
-              </button>
+              <button class="btn-primary" id="btnVoiceRecord"><span id="micIcon"></span> <span id="micBtnText">Sprechen (Start Mic)</span></button>
+              <button class="btn-secondary" id="btnAudioSaveRecord">⏺Aufnahme für Analyse (Record Audio)</button>
+              <button class="btn-sample-insert" id="btnPasteSampleAnswer">Musterantwort (Sample Answer)</button>
             </div>
           </div>
-
-          <!-- Microphone Diagnostics & Permission Banner -->
           <div id="micAlertBox" class="mic-alert-box" style="display: none;"></div>
-
           <div id="listeningIndicator" class="listening-indicator" style="display: none;">
-            <div class="sound-wave">
-              <span></span><span></span><span></span><span></span><span></span>
-            </div>
+            <div class="sound-wave"><span></span><span></span><span></span><span></span><span></span></div>
             <span class="listening-text" id="liveWaveText">Zuhören... Bitte sprechen Sie auf Deutsch (Listening...)</span>
           </div>
-
           <div class="input-container">
-            <textarea id="userResponseInput" rows="5" placeholder="Sprechen Sie in Ihr Mikrofon oder tippen Sie Ihre Antwort hier ein... (Type or speak your B2 German response here...)"></textarea>
+            <textarea id="userResponseInput" rows="5" placeholder="Sprechen Sie in Ihr Mikrofon oder tippen Sie Ihre Antwort hier ein..."></textarea>
           </div>
-
           <div class="response-footer">
-            <div class="word-counter-badge">
-              <span id="responseWordCount">0</span> Wörter (B2 Richtwert: 50-120 Wörter)
-            </div>
+            <div class="word-counter-badge"><span id="responseWordCount">0</span> Wörter (B2 Richtwert: 50-120 Wörter)</div>
             <div class="action-buttons">
               <button class="btn-clear" id="btnClearResponse">Löschen</button>
-              <button class="btn-evaluate" id="btnEvaluateResponse">
-                Antworten & Prüfer-Feedback erhalten
-              </button>
+              <button class="btn-evaluate" id="btnEvaluateResponse">Antworten & Prüfer-Feedback erhalten</button>
             </div>
           </div>
-
           <div id="audioPlaybackBox" class="audio-playback-box" style="display: none;">
-            <label>Ihre Audioaufnahme (Listen to your pronunciation):</label>
+            <label>Ihre Audioaufnahme:</label>
             <audio id="recordedAudioPlayer" controls></audio>
           </div>
         </div>
-
-        <!-- Feedback & Evaluation Container -->
         <div id="feedbackContainer" class="feedback-container" style="display: none;"></div>
-
-        <!-- Quick B2 Redemittel Drawer -->
         <div class="quick-phrases-drawer">
           <details>
-            <summary>Empfohlene B2 Redemittel für dieses Thema (Helpful phrases${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' with Malayalam' : ''})</summary>
-            <div class="quick-phrases-grid">
-              ${getQuickPhrasesForPart(state.examPart)}
-            </div>
+            <summary>Empfohlene B2 Redemittel${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' with Malayalam' : ''}</summary>
+            <div class="quick-phrases-grid">${getQuickPhrasesForPart(state.examPart)}</div>
           </details>
         </div>
       </div>
     `;
-
     examinerContainer.innerHTML = html;
     attachExaminerListeners(currentTask);
   }
@@ -810,11 +1052,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.insertPhraseToInput = function(phraseText) {
-    const input = document.getElementById('userResponseInput');
+    const input = document.getElementById('userResponseInput') || document.getElementById('qaAnswerInput');
     if (input) {
       input.value += (input.value ? ' ' : '') + phraseText + ' ';
       input.focus();
-      updateWordCount();
+      if (input.id === 'userResponseInput') {
+        state.transcript = input.value;
+        updateWordCount();
+      } else if (input.id === 'qaAnswerInput') {
+        state.partnerQaAnswer = input.value;
+      }
     }
   };
 
@@ -842,45 +1089,40 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTimerDisplay();
   }
 
+  function startPresentationTimer() {
+    if (state.timerSeconds <= 0) state.timerSeconds = 90;
+    state.isTimerRunning = true;
+    updateTimerDisplay();
+    state.timerInterval = setInterval(() => {
+      if (state.timerSeconds > 0) {
+        state.timerSeconds--;
+        updateTimerDisplay();
+        if (state.timerSeconds === 0) {
+          clearInterval(state.timerInterval);
+          state.isTimerRunning = false;
+          updateTimerDisplay();
+          speech.speak('Ihre Zeit ist um. Vielen Dank für Ihre Präsentation.');
+          const input = document.getElementById('userResponseInput');
+          if (input) state.transcript = input.value.trim();
+          setTimeout(() => {
+            if (state.examPart === 'teil1') setExamPhase('partner-qa');
+          }, 2000);
+        }
+      }
+    }, 1000);
+  }
+
   function toggleExamTimer() {
     if (state.isTimerRunning) {
       if (state.timerInterval) clearInterval(state.timerInterval);
       state.isTimerRunning = false;
       updateTimerDisplay();
     } else {
-      // Detect a fresh start (timer at full duration, not resuming from a pause)
-      const isFreshStart = state.timerSeconds >= (state.examPart === 'teil1' ? 90 : 300);
-
       if (state.timerSeconds <= 0) {
         state.timerSeconds = state.examPart === 'teil1' ? 90 : 300;
       }
       state.isTimerRunning = true;
       updateTimerDisplay();
-
-      // When starting fresh, switch to Teil 1 and speak the examiner intro
-      if (isFreshStart) {
-        // Always begin with Teil 1 on a fresh start
-        if (state.examPart !== 'teil1') {
-          state.examPart = 'teil1';
-          state.selectedTaskIndex = 0;
-          state.timerSeconds = 90;
-          state.timerTotalSeconds = 90;
-          updateTimerDisplay();
-          renderExaminerStage();
-          // Re-attach after re-render so timer continues correctly
-          const btnToggle = document.getElementById('btnToggleTimer');
-          if (btnToggle) {
-            btnToggle.classList.add('timer-running');
-            btnToggle.textContent = '⏸Pause';
-          }
-        }
-        // Speak the examiner's opening line for Teil 1
-        const currentTaskList = TELC_B2_DATA['teil1'];
-        const currentTask = currentTaskList[state.selectedTaskIndex] || currentTaskList[0];
-        const introSpeech = getExaminerIntroSpeech('teil1', currentTask);
-        speech.speak(introSpeech);
-      }
-
       state.timerInterval = setInterval(() => {
         if (state.timerSeconds > 0) {
           state.timerSeconds--;
@@ -889,7 +1131,16 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(state.timerInterval);
             state.isTimerRunning = false;
             updateTimerDisplay();
-            speech.speak('Die Zeit für diesen Prüfungsteil ist um.');
+            if (state.examPart === 'teil1') {
+              speech.speak('Ihre Zeit ist um. Vielen Dank für Ihre Präsentation.');
+              const input = document.getElementById('userResponseInput');
+              if (input) state.transcript = input.value.trim();
+              setTimeout(() => {
+                setExamPhase('partner-qa');
+              }, 2000);
+            } else {
+              speech.speak('Die Zeit für diesen Prüfungsteil ist um.');
+            }
           }
         }
       }, 1000);
@@ -899,7 +1150,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateTimerDisplay() {
     const disp = document.getElementById('examTimerDisplay');
     const btnToggle = document.getElementById('btnToggleTimer');
-    const label = document.getElementById('examTimerLabel');
     if (disp) {
       disp.textContent = formatTimerDigits(state.timerSeconds);
       if (state.timerSeconds <= 30 && state.timerSeconds > 0) {
@@ -909,11 +1159,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (btnToggle) {
-      btnToggle.textContent = state.isTimerRunning ? '⏸Pause' : '▶Start';
+      btnToggle.textContent = state.isTimerRunning ? '⏸ Pause' : '▶ Fortsetzen';
       btnToggle.classList.toggle('timer-running', state.isTimerRunning);
-    }
-    if (label) {
-      label.textContent = state.examPart === 'teil1' ? 'Teil 1 (1,5 Min.)' : 'Teil 2/3 (5 Min.)';
     }
   }
 
@@ -922,24 +1169,141 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskSelect = document.getElementById('taskSelect');
     const btnToggleTimer = document.getElementById('btnToggleTimer');
     const btnResetTimer = document.getElementById('btnResetTimer');
+    const btnRestartExam = document.getElementById('btnRestartExam');
     const btnSpeakExaminerPrompt = document.getElementById('btnSpeakExaminerPrompt');
+    const btnSpeakWarmup = document.getElementById('btnSpeakWarmup');
+    const btnWarmupNext = document.getElementById('btnWarmupNext');
+    const btnStartPresentation = document.getElementById('btnStartPresentation');
+    const btnSubmitQaAnswer = document.getElementById('btnSubmitQaAnswer');
+    const btnGoTeil2 = document.getElementById('btnGoTeil2');
+    const btnRestartTeil1 = document.getElementById('btnRestartTeil1');
+    const btnSpeakPartnerQ = document.getElementById('btnSpeakPartnerQ');
     const btnVoiceRecord = document.getElementById('btnVoiceRecord');
     const btnAudioSaveRecord = document.getElementById('btnAudioSaveRecord');
     const btnPasteSampleAnswer = document.getElementById('btnPasteSampleAnswer');
     const userResponseInput = document.getElementById('userResponseInput');
+    const qaAnswerInput = document.getElementById('qaAnswerInput');
     const btnClearResponse = document.getElementById('btnClearResponse');
     const btnEvaluateResponse = document.getElementById('btnEvaluateResponse');
     const listeningIndicator = document.getElementById('listeningIndicator');
     const liveWaveText = document.getElementById('liveWaveText');
     const micAlertBox = document.getElementById('micAlertBox');
 
-    if (btnToggleTimer) {
-      btnToggleTimer.addEventListener('click', toggleExamTimer);
+    // Phase: Warm-up → Intro
+    if (btnWarmupNext) {
+      btnWarmupNext.addEventListener('click', () => {
+        setExamPhase('intro');
+        setTimeout(() => speech.speak(getExaminerIntroSpeech('teil1', currentTask)), 600);
+      });
     }
 
-    if (btnResetTimer) {
-      btnResetTimer.addEventListener('click', resetExamTimer);
+    // Phase: Intro → Presenting (timer starts HERE)
+    if (btnStartPresentation) {
+      btnStartPresentation.addEventListener('click', () => {
+        state.timerSeconds = 90;
+        state.timerTotalSeconds = 90;
+        setExamPhase('presenting');
+        setTimeout(() => startPresentationTimer(), 150);
+      });
     }
+
+    // Pause/resume in presenting phase
+    if (btnToggleTimer) btnToggleTimer.addEventListener('click', toggleExamTimer);
+
+    // Reset timer (Teil 2/3 classic layout)
+    if (btnResetTimer) btnResetTimer.addEventListener('click', resetExamTimer);
+
+    // Restart exam from any phase
+    if (btnRestartExam) {
+      btnRestartExam.addEventListener('click', () => {
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.isTimerRunning = false;
+        state.timerSeconds = state.examPart === 'teil1' ? 90 : 300;
+        state.timerTotalSeconds = state.timerSeconds;
+        state.examPhase = 'warmup';
+        renderExaminerStage();
+      });
+    }
+
+    // Warmup speak
+    if (btnSpeakWarmup) {
+      btnSpeakWarmup.addEventListener('click', () => {
+        speech.speak(`Herzlich willkommen! Ich bin ${examiner.name}. Wie geht es Ihnen heute?`);
+      });
+    }
+
+    // Speak examiner intro text
+    if (btnSpeakExaminerPrompt) {
+      btnSpeakExaminerPrompt.addEventListener('click', () => {
+        const el = document.getElementById('examinerSpeechText');
+        if (el) speech.speak(el.textContent);
+      });
+    }
+
+    // Partner Q speak
+    if (btnSpeakPartnerQ) {
+      btnSpeakPartnerQ.addEventListener('click', () => {
+        const qEl = document.getElementById('partnerQText');
+        if (qEl) speech.speak(qEl.textContent);
+      });
+    }
+
+    // Phase: Presenting → partner-qa (student clicks "Präsentation abgeben")
+    if (btnEvaluateResponse) {
+      btnEvaluateResponse.addEventListener('click', () => {
+        const input = document.getElementById('userResponseInput');
+        const text = input ? input.value.trim() : '';
+        state.transcript = text;
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.isTimerRunning = false;
+        if (state.examPart === 'teil1') {
+          setExamPhase('partner-qa');
+        } else {
+          // For Teil 2/3 classic layout, evaluate immediately
+          if (!text) { alert('Bitte geben Sie zuerst eine Antwort ein oder sprechen Sie ins Mikrofon!'); return; }
+          runEvaluation(text, currentTask);
+        }
+      });
+    }
+
+    // Phase: Partner Q&A → feedback
+    if (btnSubmitQaAnswer) {
+      btnSubmitQaAnswer.addEventListener('click', async () => {
+        const qaText = qaAnswerInput ? qaAnswerInput.value.trim() : '';
+        state.partnerQaAnswer = qaText;
+        const combinedText = (state.transcript || '') + (qaText ? '\n[Partner-Antwort]: ' + qaText : '');
+        setExamPhase('feedback');
+        await runEvaluation(combinedText, currentTask);
+      });
+    }
+
+    // Feedback: go to Teil 2
+    if (btnGoTeil2) {
+      btnGoTeil2.addEventListener('click', () => {
+        state.examPart = 'teil2';
+        state.selectedTaskIndex = 0;
+        state.examPhase = 'warmup';
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.isTimerRunning = false;
+        state.timerSeconds = 300;
+        state.timerTotalSeconds = 300;
+        renderExaminerStage();
+      });
+    }
+
+    // Feedback: restart Teil 1
+    if (btnRestartTeil1) {
+      btnRestartTeil1.addEventListener('click', () => {
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        state.isTimerRunning = false;
+        state.timerSeconds = 90;
+        state.timerTotalSeconds = 90;
+        state.examPhase = 'warmup';
+        renderExaminerStage();
+      });
+    }
+
+
 
     function showMicAlert(type, message) {
       if (!micAlertBox) return;
@@ -1035,6 +1399,9 @@ document.addEventListener('DOMContentLoaded', () => {
       partSelect.addEventListener('change', (e) => {
         state.examPart = e.target.value;
         state.selectedTaskIndex = 0;
+        state.examPhase = 'warmup';
+        state.transcript = '';
+        state.partnerQaAnswer = '';
         resetExamTimer();
         renderExaminerStage();
       });
@@ -1050,6 +1417,9 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
         state.selectedTaskIndex = selectedIdx;
+        state.examPhase = 'warmup';
+        state.transcript = '';
+        state.partnerQaAnswer = '';
         resetExamTimer();
         renderExaminerStage();
       });
@@ -1063,12 +1433,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (userResponseInput) {
-      userResponseInput.addEventListener('input', updateWordCount);
+      userResponseInput.addEventListener('input', () => {
+        state.transcript = userResponseInput.value;
+        updateWordCount();
+      });
+    }
+
+    if (qaAnswerInput) {
+      qaAnswerInput.addEventListener('input', () => {
+        state.partnerQaAnswer = qaAnswerInput.value;
+      });
+    }
+
+    const btnUseQaSampleAnswer = document.getElementById('btnUseQaSampleAnswer');
+    if (btnUseQaSampleAnswer && qaAnswerInput) {
+      btnUseQaSampleAnswer.addEventListener('click', () => {
+        const q = (currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0)
+          ? currentTask.examinerQuestions[0]
+          : null;
+        if (q && q.sampleAnswer) {
+          qaAnswerInput.value = q.sampleAnswer;
+          state.partnerQaAnswer = q.sampleAnswer;
+          qaAnswerInput.focus();
+        }
+      });
     }
 
     if (btnClearResponse) {
       btnClearResponse.addEventListener('click', () => {
-        userResponseInput.value = '';
+        if (userResponseInput) userResponseInput.value = '';
+        state.transcript = '';
         updateWordCount();
         hideMicAlert();
         const feedbackContainer = document.getElementById('feedbackContainer');
@@ -1080,20 +1474,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnPasteSampleAnswer) {
       btnPasteSampleAnswer.addEventListener('click', () => {
         let sample = '';
-        if (currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0 && currentTask.examinerQuestions[0].sampleAnswer) {
-          sample = currentTask.examinerQuestions[0].sampleAnswer;
+        if (currentTask.outline && currentTask.outline.length > 0) {
+          sample = currentTask.outline.map(o => o.phrase || o.de).join(' ');
         } else if (currentTask.tips && currentTask.tips.length > 0) {
           sample = currentTask.tips.join(' ');
-        } else if (currentTask.outline && currentTask.outline.length > 0) {
-          sample = currentTask.outline.map(o => o.phrase).join(' ');
+        } else if (currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0 && currentTask.examinerQuestions[0].sampleAnswer) {
+          sample = currentTask.examinerQuestions[0].sampleAnswer;
         } else {
           sample = 'Ich möchte heute über dieses Thema sprechen, weil es in der heutigen Zeit eine sehr wichtige Rolle spielt. Einerseits gibt es zahlreiche Vorteile, andererseits darf man aber auch die damit verbundenen Herausforderungen nicht unterschätzen.';
         }
 
-        userResponseInput.value = sample;
-        updateWordCount();
-        hideMicAlert();
-        userResponseInput.focus();
+        if (userResponseInput) {
+          userResponseInput.value = sample;
+          state.transcript = sample;
+          updateWordCount();
+          hideMicAlert();
+          userResponseInput.focus();
+        }
       });
     }
 
@@ -1103,9 +1500,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnVoiceRecord) {
       btnVoiceRecord.addEventListener('click', () => {
+        const activeTarget = document.getElementById('qaAnswerInput') || document.getElementById('userResponseInput');
         if (!state.isListening) {
           hideMicAlert();
-          sessionBaseText = userResponseInput.value.trim();
+          sessionBaseText = activeTarget ? activeTarget.value.trim() : '';
           speechSessionFinal = '';
 
           if (liveWaveText) {
@@ -1133,8 +1531,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
               }
 
-              userResponseInput.value = currentText;
-              updateWordCount();
+              if (activeTarget) {
+                activeTarget.value = currentText;
+                if (activeTarget.id === 'userResponseInput') {
+                  state.transcript = currentText;
+                  updateWordCount();
+                } else if (activeTarget.id === 'qaAnswerInput') {
+                  state.partnerQaAnswer = currentText;
+                }
+              }
             },
             (status, msg) => {
               if (status === 'listening') {
@@ -1199,76 +1604,63 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+  }
 
-    // Evaluation Button with Free Tier Limit Check & AI Analysis
-    if (btnEvaluateResponse) {
-      btnEvaluateResponse.addEventListener('click', async () => {
-        const text = userResponseInput.value.trim();
-        if (!text) {
-          alert('Bitte geben Sie zuerst eine Antwort ein oder sprechen Sie ins Mikrofon!');
-          return;
-        }
+  // Shared evaluation runner
+  async function runEvaluation(text, currentTask) {
+    if (!text || !text.trim()) text = 'Keine Antwort eingegeben.';
 
-        // Daily usage limit for free / guest users (stored in localStorage)
-        if (!auth.isPremium()) {
-          const usedToday = incrementDailyUsage();
-          if (usedToday > 5) {
-            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക.');
-            openUpgradeModal();
-            return;
-          }
-        }
+    if (!auth.isPremium()) {
+      const usedToday = incrementDailyUsage();
+      if (usedToday > 5) {
+        alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക.');
+        openUpgradeModal();
+        return;
+      }
+    }
 
-        // Animated AI Loading Stage
-        const feedbackContainer = document.getElementById('feedbackContainer');
-        if (feedbackContainer) {
-          feedbackContainer.style.display = 'block';
-          feedbackContainer.innerHTML = `
-            <div class="feedback-card glass-panel ai-loading-panel animate-fade-in">
-              <div class="ai-loading-header">
-                <div class="ai-pulse-radar">
-                  <div class="radar-circle radar-circle-1"></div>
-                  <div class="radar-circle radar-circle-2"></div>
-                  <div class="radar-core">W</div>
-                </div>
-                <div class="ai-loading-title-group">
-                  <h4>Frau Dr. Weber analysiert Ihre Sprachaufnahme...</h4>
-                  <p class="ai-loading-sub">Offizielle telc B2 Kriterien werden mit KI ausgewertet • Gemini AI Engine</p>
-                </div>
-              </div>
-              <div class="ai-loading-steps-row">
-                <div class="ai-step-badge step-done"><span>✓</span> 1. Sprache transkribieren & scannen</div>
-                <div class="ai-step-badge step-active"><span>⚡</span> 2. Grammatik, B2-Konnektoren & NVV prüfen</div>
-                <div class="ai-step-badge step-pending"><span>⏳</span> 3. Aufgabenbewältigung & Thema bewerten</div>
-                <div class="ai-step-badge step-pending"><span>✍</span> 4. Malayalam & deutsche Empfehlungen erstellen</div>
-              </div>
+    const feedbackContainer = document.getElementById('feedbackContainer');
+    if (feedbackContainer) {
+      feedbackContainer.style.display = 'block';
+      feedbackContainer.innerHTML = `
+        <div class="feedback-card glass-panel ai-loading-panel animate-fade-in">
+          <div class="ai-loading-header">
+            <div class="ai-pulse-radar">
+              <div class="radar-circle radar-circle-1"></div>
+              <div class="radar-circle radar-circle-2"></div>
+              <div class="radar-core">W</div>
             </div>
-          `;
-          feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+            <div class="ai-loading-title-group">
+              <h4>Frau Dr. Weber analysiert Ihre Präsentation & Partner-Antwort...</h4>
+              <p class="ai-loading-sub">Offizielle telc B2 Kriterien werden mit KI ausgewertet • Gemini AI Engine</p>
+            </div>
+          </div>
+          <div class="ai-loading-steps-row">
+            <div class="ai-step-badge step-done"><span>✓</span> 1. Präsentation transkribiert</div>
+            <div class="ai-step-badge step-done"><span>✓</span> 2. Partner-Antwort erfasst</div>
+            <div class="ai-step-badge step-active"><span>⚡</span> 3. Grammatik, Konnektoren & NVV analysieren</div>
+            <div class="ai-step-badge step-pending"><span>✍</span> 4. Gesamtbewertung & Empfehlungen erstellen</div>
+          </div>
+        </div>
+      `;
+      feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
-        btnEvaluateResponse.disabled = true;
-        const originalBtnText = btnEvaluateResponse.innerHTML;
-        btnEvaluateResponse.innerHTML = `<span class="spin-icon">⚡</span> KI analysiert Antwort...`;
-
-        try {
-          const serverStatus = window.aiService ? await window.aiService.checkServerStatus() : { serverConfigured: false };
-          const result = await examiner.evaluate(text, state.examPart, currentTask);
-          displayExaminerFeedback(result, currentTask, serverStatus);
-        } catch (evalErr) {
-          console.error('AI Evaluation error:', evalErr);
-          const fallback = examiner.evaluateResponse(text, state.examPart, currentTask);
-          fallback.isAIEvaluated = false;
-          fallback.aiProvider = 'Lokale Prüfer-Regeln (Standard Engine)';
-          const serverStatus = window.aiService ? (window.aiService._cachedServerStatus || { serverConfigured: false }) : { serverConfigured: false };
-          displayExaminerFeedback(fallback, currentTask, serverStatus);
-        } finally {
-          btnEvaluateResponse.disabled = false;
-          btnEvaluateResponse.innerHTML = originalBtnText;
-        }
-      });
+    try {
+      const serverStatus = window.aiService ? await window.aiService.checkServerStatus() : { serverConfigured: false };
+      const result = await examiner.evaluate(text, state.examPart, currentTask);
+      displayExaminerFeedback(result, currentTask, serverStatus);
+    } catch (evalErr) {
+      console.error('AI Evaluation error:', evalErr);
+      const fallback = examiner.evaluateResponse(text, state.examPart, currentTask);
+      fallback.isAIEvaluated = false;
+      fallback.aiProvider = 'Lokale Prüfer-Regeln (Standard Engine)';
+      const serverStatus = window.aiService ? (window.aiService._cachedServerStatus || { serverConfigured: false }) : { serverConfigured: false };
+      displayExaminerFeedback(fallback, currentTask, serverStatus);
     }
   }
+
+
 
   function displayExaminerFeedback(result, currentTask, serverStatus) {
     const container = document.getElementById('feedbackContainer');
@@ -2003,10 +2395,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.examPart = part;
     state.selectedTaskIndex = taskIndex;
+    state.examPhase = 'warmup';
+    state.transcript = '';
+    state.partnerQaAnswer = '';
     resetExamTimer();
     
     const examinerTabBtn = document.querySelector('[data-tab="examiner"]');
     if (examinerTabBtn) examinerTabBtn.click();
+    renderExaminerStage();
   };
 
   function nl2br(str) {

@@ -3217,4 +3217,557 @@ input:checked + .slider:before {
   font-family: var(--font-ml);
 }
 
+/* ==========================================================
+   telc B2 Teil 1 • Authentic Exam Flow & Phase Stepper
+   ========================================================== */
+
+.exam-phase-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  margin: 14px 0 20px 0;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.phase-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.phase-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+}
+
+.phase-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color 0.25s ease;
+}
+
+.phase-step.phase-done .phase-dot {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+
+.phase-step.phase-done .phase-label {
+  color: var(--primary-light);
+}
+
+.phase-step.phase-active .phase-dot {
+  background: var(--accent-gold);
+  color: #1A1300;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(217, 169, 58, 0.45);
+}
+
+.phase-step.phase-active .phase-label {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.phase-connector {
+  flex: 1;
+  min-width: 14px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 1px;
+}
+
+.phase-connector.connector-done {
+  background: var(--primary);
+}
+
+/* Phase Container */
+.phase-content {
+  position: relative;
+  min-height: 260px;
+}
+
+/* 1. Warm-up Phase */
+.phase-warmup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.warmup-questions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.warmup-q-card {
+  display: flex;
+  gap: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  align-items: flex-start;
+}
+
+.warmup-q-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(46, 148, 132, 0.2);
+  color: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.warmup-q-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.warmup-q-de {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.warmup-q-ml {
+  font-size: 0.82rem;
+  color: var(--text-malayalam);
+  font-family: var(--font-ml);
+}
+
+.warmup-q-en {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.warmup-tip-box {
+  background: rgba(217, 169, 58, 0.08);
+  border: 1px solid rgba(217, 169, 58, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.warmup-tip-box .tip-label {
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-right: 6px;
+}
+
+.warmup-tip-box .ml-text {
+  color: var(--text-malayalam);
+  font-family: var(--font-ml);
+  margin-left: 6px;
+}
+
+/* 2. Intro / Task Briefing Phase */
+.phase-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.task-briefing-box {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.task-briefing-box .briefing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.task-briefing-box .briefing-header h4 {
+  font-size: 1.15rem;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.task-briefing-box .task-body {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.structure-guide-box {
+  background: rgba(46, 148, 132, 0.08);
+  border: 1px solid rgba(46, 148, 132, 0.25);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.structure-guide-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary-light);
+  margin-bottom: 10px;
+}
+
+.structure-steps-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.struct-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.struct-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.struct-ml-note {
+  font-size: 0.8rem;
+  color: var(--text-malayalam);
+  font-family: var(--font-ml);
+  margin-top: 8px;
+}
+
+.pre-start-note {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+/* Phase Action Row */
+.phase-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.btn-phase-next {
+  background: var(--primary);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 22px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-phase-next:hover {
+  background: #27806F;
+}
+
+.btn-phase-start {
+  background: linear-gradient(135deg, #D9A93A 0%, #F59E0B 100%);
+  color: #1A1300;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px 26px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(217, 169, 58, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-phase-start:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(217, 169, 58, 0.5);
+}
+
+/* 3. Presenting Phase */
+.phase-presenting {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.presenting-live-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.live-dot-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #EF4444;
+  box-shadow: 0 0 8px #EF4444;
+  animation: livePulse 1.4s infinite ease-in-out;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.live-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #FCA5A5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.timer-display-large .timer-digits {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  font-family: var(--font-heading);
+}
+
+.timer-label-part {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.task-reminder-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.structure-guide-collapsible {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.86rem;
+}
+
+.structure-guide-collapsible summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--primary-light);
+}
+
+.structure-guide-collapsible .structure-steps-mini {
+  margin-top: 10px;
+}
+
+/* 4. Partner Q&A Phase */
+.phase-partner-qa {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.qa-phase-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(217, 169, 58, 0.08);
+  border: 1px solid rgba(217, 169, 58, 0.25);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.qa-phase-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.qa-phase-banner strong {
+  font-size: 0.96rem;
+  color: var(--accent-gold);
+  display: block;
+}
+
+.qa-phase-banner p {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  margin: 2px 0 0 0;
+}
+
+.qa-phase-banner .ml-text {
+  font-size: 0.8rem;
+  color: var(--text-malayalam);
+  font-family: var(--font-ml);
+  margin-top: 4px;
+}
+
+.partner-question-card {
+  background: var(--bg-panel);
+  border-left: 4px solid var(--accent-gold);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.partner-q-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.partner-q-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.45;
+}
+
+.qa-response-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.qa-response-panel h4 {
+  font-size: 0.98rem;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.qa-response-panel textarea {
+  width: 100%;
+  background: rgba(11, 23, 20, 0.65);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  padding: 12px;
+  resize: vertical;
+}
+
+.qa-response-panel textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.qa-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.qa-sample-toggle {
+  flex: 1;
+  min-width: 240px;
+  font-size: 0.86rem;
+}
+
+.qa-sample-toggle summary {
+  cursor: pointer;
+  color: var(--primary-light);
+  font-weight: 600;
+}
+
+.sample-ans-box {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  font-size: 0.86rem;
+}
+
+/* 5. Feedback Phase Shell */
+.phase-feedback {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .exam-phase-bar {
+    padding: 8px 12px;
+  }
+  .phase-label {
+    display: none;
+  }
+  .phase-step.phase-active .phase-label {
+    display: block;
+    font-size: 0.76rem;
+  }
+  .btn-phase-start, .btn-phase-next {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 
