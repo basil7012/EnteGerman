@@ -82,6 +82,17 @@ export default async function handler(req, res) {
     const hasGroq = Boolean(groqKey && String(groqKey).trim().length > 5);
     const hasOpenAI = Boolean(openaiKey && String(openaiKey).trim().length > 5);
 
+    if (req.query?.debug === 'models' && geminiKey) {
+      try {
+        const cleanKey = String(geminiKey).trim().replace(/^["']|["']$/g, '');
+        const rBeta = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
+        const dBeta = await rBeta.json();
+        return res.status(200).json({ betaStatus: rBeta.status, betaData: dBeta });
+      } catch (e) {
+        return res.status(500).json({ error: e.message });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       serverConfigured: hasGemini || hasGroq || hasOpenAI,
