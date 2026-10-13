@@ -8,9 +8,17 @@
     "dev": "npx vercel dev"
   },
   "dependencies": {
-    "@vercel/postgres": "^0.10.0"
+    "@vercel/postgres": "^0.10.0",
+    "@vercel/speed-insights": "^2.0.0"
   },
-  "keywords": ["telc", "german", "b2", "kerala", "malayalam", "vercel-postgres"],
+  "keywords": [
+    "telc",
+    "german",
+    "b2",
+    "kerala",
+    "malayalam",
+    "vercel-postgres"
+  ],
   "author": "basil7012",
   "license": "MIT"
 }
