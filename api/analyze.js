@@ -68,7 +68,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-API-Version', '20261014f'); // trigger fresh Vercel serverless build
+  res.setHeader('X-API-Version', '20261014g'); // trigger fresh Vercel serverless build
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -97,7 +97,8 @@ export default async function handler(req, res) {
     if (req.query?.debug === 'test' && geminiKey) {
       try {
         const cleanKey = String(geminiKey).trim().replace(/^["']|["']$/g, '');
-        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(cleanKey)}`;
+        const testModel = req.query?.model || 'gemini-3.8-flash';
+        const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${encodeURIComponent(cleanKey)}`;
         const testResp = await fetch(testUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -107,7 +108,7 @@ export default async function handler(req, res) {
         });
         const testStatus = testResp.status;
         const testData = await testResp.text();
-        return res.status(200).json({ testStatus, testData });
+        return res.status(200).json({ model: testModel, testStatus, testData });
       } catch (e) {
         return res.status(500).json({ error: e.message });
       }
@@ -188,15 +189,17 @@ Evaluate this candidate's performance thoroughly and return your response strict
 `;
 
     let resultJson = null;
-    let modelUsed = 'gemini-2.5-flash';
+    let modelUsed = 'gemini-3.8-flash';
 
     // 3. Provider Call
     if (effectiveProvider === 'gemini') {
       const candidateModels = [
-        'gemini-2.5-flash',
-        'gemini-flash-latest',
-        'gemini-2.5-flash-lite',
-        'gemini-3-flash-preview'
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-flash-latest'
       ];
 
       const payload = {
