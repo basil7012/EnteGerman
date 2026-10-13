@@ -136,7 +136,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
     }
 
     if (p === 'gemini') {
-      const candidateModels = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
       const payload = {
         contents: [{ role: 'user', parts: [{ text: 'Respond with JSON: {"status":"ok"}' }] }],
         generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
@@ -323,6 +323,8 @@ Evaluate this candidate's performance thoroughly and return your response strict
   async callGeminiDirect(transcript, examPart, taskContext, apiKey) {
     const prompt = this.buildUserPrompt(transcript, examPart, taskContext);
     const candidateModels = [
+      'gemini-3-flash-preview',
+      'gemini-3.1-flash-lite-preview',
       'gemini-2.5-flash',
       'gemini-flash-latest',
       'gemini-2.5-flash-lite',
