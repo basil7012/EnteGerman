@@ -68,7 +68,7 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-API-Version', '20261014g'); // trigger fresh Vercel serverless build
+  res.setHeader('X-API-Version', '20261014h'); // trigger fresh Vercel serverless build
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
   }
@@ -189,16 +189,17 @@ Evaluate this candidate's performance thoroughly and return your response strict
 `;
 
     let resultJson = null;
-    let modelUsed = 'gemini-3.8-flash';
+    let modelUsed = 'gemini-3-flash-preview';
 
     // 3. Provider Call
     if (effectiveProvider === 'gemini') {
       const candidateModels = [
+        'gemini-3-flash-preview',
+        'gemini-3.1-flash-lite-preview',
+        'gemini-3.1-flash-lite',
         'gemini-3.8-flash',
         'gemini-3.5-flash',
         'gemini-3.7-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash-lite',
         'gemini-flash-latest'
       ];
 
@@ -230,9 +231,17 @@ Evaluate this candidate's performance thoroughly and return your response strict
 
         if (resp.ok) {
           const data = await resp.json();
-          let rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          const parts = data?.candidates?.[0]?.content?.parts || [];
+          let rawContent = parts.map(p => p.text || '').filter(Boolean).join('\n').trim();
           if (rawContent) {
+            // Strip code fences if present
             rawContent = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+            // Extract from first { to last } to guard against any model preamble or thought output
+            const firstBrace = rawContent.indexOf('{');
+            const lastBrace = rawContent.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              rawContent = rawContent.substring(firstBrace, lastBrace + 1);
+            }
             try {
               const parsed = JSON.parse(rawContent);
               return { success: true, parsed, model: cleanName };
