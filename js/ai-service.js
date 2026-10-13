@@ -100,6 +100,27 @@ You must respond ONLY with a valid JSON object matching this EXACT schema:
   }
 
   /**
+   * Check if the Vercel/Netlify server has an AI API key configured in env
+   */
+  async checkServerStatus(forceRefresh = false) {
+    if (!forceRefresh && this._cachedServerStatus) {
+      return this._cachedServerStatus;
+    }
+    try {
+      const resp = await fetch('/api/analyze', { method: 'GET' });
+      if (resp.ok) {
+        const data = await resp.json();
+        this._cachedServerStatus = data;
+        return data;
+      }
+    } catch (e) {
+      // not on a serverless deployment
+    }
+    this._cachedServerStatus = { serverConfigured: false, providers: {} };
+    return this._cachedServerStatus;
+  }
+
+  /**
    * Test API connectivity with a minimal payload
    */
   async testConnection(provider, apiKey) {

@@ -72,6 +72,28 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
+  // 1. Health & Server Environment Variable Status Check (GET)
+  if (req.method === 'GET') {
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_KEY || process.env.GEMINI_APIKEY;
+    const groqKey = process.env.GROQ_API_KEY || process.env.GROQ_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
+
+    const hasGemini = Boolean(geminiKey && String(geminiKey).trim().length > 5);
+    const hasGroq = Boolean(groqKey && String(groqKey).trim().length > 5);
+    const hasOpenAI = Boolean(openaiKey && String(openaiKey).trim().length > 5);
+
+    return res.status(200).json({
+      success: true,
+      serverConfigured: hasGemini || hasGroq || hasOpenAI,
+      providers: {
+        gemini: hasGemini,
+        groq: hasGroq,
+        openai: hasOpenAI
+      },
+      activeProvider: hasGemini ? 'gemini' : (hasGroq ? 'groq' : (hasOpenAI ? 'openai' : null))
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
@@ -93,16 +115,21 @@ export default async function handler(req, res) {
 
     const effectiveProvider = (provider || 'gemini').toLowerCase();
 
-    // 1. Resolve API Key
+    // 2. Resolve API Key with aliases and quote stripping
     let apiKey = clientApiKey;
     if (!apiKey) {
       if (effectiveProvider === 'gemini') {
-        apiKey = process.env.GEMINI_API_KEY;
+        apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_KEY || process.env.GEMINI_APIKEY;
       } else if (effectiveProvider === 'groq') {
-        apiKey = process.env.GROQ_API_KEY;
+        apiKey = process.env.GROQ_API_KEY || process.env.GROQ_KEY;
       } else if (effectiveProvider === 'openai') {
-        apiKey = process.env.OPENAI_API_KEY;
+        apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
       }
+    }
+
+    if (apiKey) {
+      // Clean leading/trailing quotes often accidentally pasted into env vars
+      apiKey = String(apiKey).trim().replace(/^["']|["']$/g, '');
     }
 
     if (!apiKey) {

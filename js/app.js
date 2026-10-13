@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnOpenAISettings) btnOpenAISettings.addEventListener('click', openAISettingsModal);
   if (btnCloseAISettings) btnCloseAISettings.addEventListener('click', closeAISettingsModal);
 
-  function updateAIHeaderStatus() {
+  async function updateAIHeaderStatus() {
     const dot = document.getElementById('aiStatusDot');
     const label = document.getElementById('aiPillStatus');
     if (!dot || !label || !window.aiService) return;
@@ -173,27 +173,64 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!settings.enabled) {
       dot.className = 'ai-status-dot dot-disabled';
       label.textContent = 'Aus';
-    } else if (settings.apiKey) {
+      return;
+    }
+
+    if (settings.apiKey) {
       dot.className = 'ai-status-dot dot-green';
       label.textContent = settings.provider === 'gemini' ? 'Gemini AI' : (settings.provider === 'groq' ? 'Groq' : 'OpenAI');
-    } else {
-      dot.className = 'ai-status-dot dot-yellow';
-      label.textContent = 'Bereit';
+      return;
     }
+
+    // Check if Vercel server environment variable is active
+    try {
+      const sStatus = await window.aiService.checkServerStatus();
+      if (sStatus && sStatus.serverConfigured) {
+        dot.className = 'ai-status-dot dot-green';
+        label.textContent = sStatus.activeProvider === 'gemini' ? 'Gemini Cloud' : 'KI Aktiv';
+        return;
+      }
+    } catch (e) {}
+
+    dot.className = 'ai-status-dot dot-yellow';
+    label.textContent = 'Bereit';
   }
 
-  function syncAISettingsForm() {
+  async function syncAISettingsForm() {
     if (!window.aiService) return;
     const settings = window.aiService.getSettings();
     const toggle = document.getElementById('aiEnabledToggle');
     const providerSelect = document.getElementById('aiProviderSelect');
     const keyInput = document.getElementById('aiApiKeyInput');
     const feedback = document.getElementById('aiTestFeedback');
+    const serverNotice = document.getElementById('serverEnvStatusNotice');
 
     if (toggle) toggle.checked = settings.enabled;
     if (providerSelect) providerSelect.value = settings.provider || 'gemini';
     if (keyInput) keyInput.value = settings.apiKey || '';
     if (feedback) feedback.style.display = 'none';
+
+    if (serverNotice) {
+      try {
+        const sStatus = await window.aiService.checkServerStatus(true);
+        if (sStatus && sStatus.serverConfigured) {
+          serverNotice.style.display = 'block';
+          serverNotice.innerHTML = `
+            <div class="server-env-active-chip">
+              <span class="server-active-dot"></span>
+              <div>
+                <strong>✓ സെർവർ AI കീ സജീവമാണ് (${(sStatus.activeProvider || 'GEMINI').toUpperCase()}_API_KEY Active)</strong>
+                <p>നിങ്ങൾ Vercel പ്രൊജക്റ്റിൽ ചേർത്ത API കീ ക്ലൗഡിൽ സജീവമാണ്. വിദ്യാർത്ഥികൾക്ക് സ്വന്തമായി കീ നൽകാതെ തന്നെ AI ഫീച്ചർ ഉപയോഗിക്കാം.</p>
+              </div>
+            </div>
+          `;
+        } else {
+          serverNotice.style.display = 'none';
+        }
+      } catch (e) {
+        serverNotice.style.display = 'none';
+      }
+    }
   }
 
   const aiSettingsForm = document.getElementById('aiSettingsForm');
