@@ -54,7 +54,34 @@ This hosting blueprint is designed for **₹0 / $0 cost (100% Free)** throughout
 
 ---
 
-## 🔐 3. Authentication & Membership Tier System
+## 🤖 3. 100% Free AI Speaking Session Setup (Google Gemini)
+
+The application features full AI-powered speaking assessment evaluating according to official telc B2 rubrics:
+
+### A. Free Client-Side Setup (Fastest & Zero Hosting Setup)
+1. Open the app in your browser.
+2. Click the **"KI"** pill button in the top right header.
+3. Click the link to **[Google AI Studio](https://aistudio.google.com/app/apikey)** (100% Free, no credit card required).
+4. Click **Create API Key** and paste it into the app.
+5. Click **"കണക്ഷൻ ടെസ്റ്റ് ചെയ്യുക (Test Connection)"** and then **"Save"**.
+6. That's it! Every speaking session will now be analyzed in real time with Gemini 2.0 / 1.5 Flash.
+
+### B. Server-Side Setup (Vercel / Netlify Environment Variable)
+To enable AI analysis for all your students automatically without requiring them to enter a key:
+- Add the following environment variable to your Vercel or Netlify project:
+  ```env
+  GEMINI_API_KEY="AIzaSy..."
+  ```
+- Optional alternatives:
+  ```env
+  GROQ_API_KEY="gsk_..."
+  OPENAI_API_KEY="sk-..."
+  ```
+- The backend `/api/analyze` endpoint will automatically use this key.
+
+---
+
+## 🔐 4. Authentication & Membership Tier System
 
 The application already includes a complete membership management engine in [`js/auth.js`](file:///d:/German%20practice%20app/js/auth.js):
 

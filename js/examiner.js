@@ -306,6 +306,62 @@ class TelcExaminer {
 
     return findings;
   }
+
+  // Modern Asynchronous AI-Powered Assessment with Seamless Local Fallback
+  async evaluate(userText, taskType, taskContext) {
+    const text = userText.trim();
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+
+    // Fast-path: Too short for B2 analysis
+    if (wordCount < 10) {
+      const localFindings = this.evaluateResponse(text, taskType, taskContext);
+      localFindings.isAIEvaluated = false;
+      return localFindings;
+    }
+
+    // Attempt AI evaluation if service is available
+    if (typeof window !== 'undefined' && window.aiService && window.aiService.isAIEnabled()) {
+      try {
+        const aiResult = await window.aiService.analyzeSpeakingSession(text, taskType, taskContext);
+        if (aiResult && aiResult.success && aiResult.analysis) {
+          const aiData = aiResult.analysis;
+          return {
+            wordCount: wordCount,
+            scoreTotal: Math.round(Number(aiData.scoreTotal) || 0),
+            isThemaverfehlung: Boolean(aiData.isThemaverfehlung),
+            ratings: {
+              aufgabe: Math.round(Number(aiData.ratings?.aufgabe) || 0),
+              ausdruck: Math.round(Number(aiData.ratings?.ausdruck) || 0),
+              grammatik: Math.round(Number(aiData.ratings?.grammatik) || 0),
+              fluency: Math.round(Number(aiData.ratings?.fluency) || 0)
+            },
+            detectedConnectors: Array.isArray(aiData.detectedConnectors) ? aiData.detectedConnectors : [],
+            detectedNVV: Array.isArray(aiData.detectedNVV) ? aiData.detectedNVV : [],
+            detectedRedemittel: Array.isArray(aiData.detectedRedemittel) ? aiData.detectedRedemittel : [],
+            grammarAlerts: Array.isArray(aiData.grammarAlerts) ? aiData.grammarAlerts : [],
+            improvements: Array.isArray(aiData.improvements) ? aiData.improvements : [],
+            pronunciationTips: Array.isArray(aiData.pronunciationTips) ? aiData.pronunciationTips : [],
+            germanExaminerComment: aiData.germanExaminerComment || '',
+            englishFeedback: aiData.englishFeedback || '',
+            malayalamFeedback: aiData.malayalamFeedback || '',
+            examinerFollowUp: aiData.examinerFollowUp || null,
+            isAIEvaluated: true,
+            aiProvider: aiResult.provider || 'Google Gemini AI'
+          };
+        } else {
+          console.info('Falling back to local examiner engine:', aiResult?.reason);
+        }
+      } catch (err) {
+        console.warn('AI evaluation failed, falling back to local examiner:', err);
+      }
+    }
+
+    // Seamless fallback to local deterministic rule engine
+    const local = this.evaluateResponse(text, taskType, taskContext);
+    local.isAIEvaluated = false;
+    local.aiProvider = 'Lokale Prüfer-Regeln (Standard Engine)';
+    return local;
+  }
 }
 
 if (typeof window !== 'undefined') {

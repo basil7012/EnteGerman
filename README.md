@@ -9,14 +9,17 @@ A dedicated, authentic **telc Deutsch B2 Oral Exam Preparation Web Application**
 
 ### 1. 👩‍🏫 Live Interactive telc B2 Examiner Simulation (Frau Dr. Weber)
 - **Authentic Examiner Persona**: Delivers prompts, listens attentively, and asks realistic telc follow-up questions (*Prüferfragen*).
+- **🤖 Real AI Speaking Session Analysis**:
+  - **100% Free Google Gemini Integration** (Gemini 2.0 / 1.5 Flash via Google AI Studio).
+  - Also supports Groq (Llama 3.3) and OpenAI (GPT-4o-mini).
+  - Evaluates speech against the official 4 telc B2 criteria: *Aufgabenbewältigung*, *Ausdrucksfähigkeit*, *Formale Richtigkeit*, *Kohärenz & Flüssigkeit*.
+  - **Themaverfehlung Detection**: Automatically alerts candidates if they speak off-topic.
+  - **Interactive Grammar Corrections**: Side-by-side diffs showing student errors, B2 corrections, and specific Malayalam explanations for South Asian language structures.
+  - **B2 Expression Upgrades**: Upgrades simple German words to formal B2 idioms and collocations (*Nomen-Verb-Verbindungen*).
+  - **Dynamic Follow-Up Questions**: AI Prüfer generates personalized contextual follow-up questions based on what the candidate spoke.
 - **Speech Synthesis (German TTS)**: Native German audio with adjustable speed (0.8x slower for comprehension, 1.0x normal, 1.15x exam pace).
 - **Voice Input (Speech-to-Text)**: Speak directly into your microphone in German to simulate live exam speaking.
 - **Audio Recording Studio**: Record your 3-minute presentations and listen back to practice your pronunciation.
-- **Automated telc B2 Grading Engine**: Real-time evaluation against official criteria:
-  - **Aufgabenbewältigung** (Task fulfillment & structure)
-  - **Ausdrucksfähigkeit** (B2 vocabulary & Nomen-Verb-Verbindungen)
-  - **Formale Richtigkeit** (Grammar & word order)
-  - **Kohärenz & Flüssigkeit** (Connectors & fluency)
 - **Trilingual & Flexible Language Modes**:
   - `🇩🇪 + 🇮🇳 മലയാളം + 🇬🇧 English`: Full trilingual support.
   - `🇩🇪 + 🇬🇧 English Only (No Malayalam)`: Pure German exam preparation with full English guidance (ideal for all international students).

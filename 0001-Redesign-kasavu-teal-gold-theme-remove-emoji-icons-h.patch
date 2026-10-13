@@ -1,0 +1,1206 @@
+From feb8248da0b8f60f1739ea75265397e819e9dc18 Mon Sep 17 00:00:00 2001
+From: claude <noreply@anthropic.com>
+Date: Sat, 10 Oct 2026 18:20:44 +0000
+Subject: [PATCH 1/2] Redesign: kasavu teal/gold theme, remove emoji icons,
+ hide demo credentials and promo hints
+
+---
+ api/auth.js    |   2 +-
+ css/style.css  | 114 +++++++++++++++++++-------------------
+ css/theme.css  |  56 +++++++++++++++++++
+ index.html     |  54 +++++++++---------
+ js/app.js      | 145 ++++++++++++++++++++++++-------------------------
+ js/auth.js     |   4 +-
+ js/examiner.js |   6 +-
+ 7 files changed, 216 insertions(+), 165 deletions(-)
+ create mode 100644 css/theme.css
+
+diff --git a/api/auth.js b/api/auth.js
+index 99c206d..ce36163 100644
+--- a/api/auth.js
++++ b/api/auth.js
+@@ -121,7 +121,7 @@ export default async function handler(req, res) {
+       const cleanCode = promoCode.trim().toUpperCase();
+ 
+       if (!validCodes.includes(cleanCode)) {
+-        return res.status(400).json({ success: false, message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code). Try code: KERALAB2VIP' });
++        return res.status(400).json({ success: false, message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code).' });
+       }
+ 
+       await sql`
+diff --git a/css/style.css b/css/style.css
+index a3734c6..4b5bad3 100644
+--- a/css/style.css
++++ b/css/style.css
+@@ -9,9 +9,9 @@
+   --bg-card-hover: rgba(26, 35, 56, 0.85);
+   --bg-panel: rgba(15, 21, 35, 0.9);
+   
+-  --primary: #6366F1;
+-  --primary-light: #818CF8;
+-  --primary-glow: rgba(99, 102, 241, 0.25);
++  --primary: #2E9484;
++  --primary-light: #7FD6C8;
++  --primary-glow: rgba(63, 181, 162, 0.25);
+   
+   --accent-gold: #F59E0B;
+   --accent-gold-glow: rgba(245, 158, 11, 0.2);
+@@ -23,10 +23,10 @@
+   --text-secondary: #94A3B8;
+   --text-muted: #64748B;
+   --text-malayalam: #FCD34D;
+-  --text-english: #A5B4FC;
++  --text-english: #9FD3C9;
+ 
+   --border-light: rgba(255, 255, 255, 0.08);
+-  --border-active: rgba(99, 102, 241, 0.4);
++  --border-active: rgba(63, 181, 162, 0.4);
+ 
+   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+   --font-heading: 'Outfit', sans-serif;
+@@ -39,7 +39,7 @@
+ 
+   --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+   --shadow-lg: 0 16px 32px -8px rgba(0, 0, 0, 0.4);
+-  --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.3);
++  --shadow-glow: 0 0 25px rgba(63, 181, 162, 0.3);
+ }
+ 
+ /* Base Styles */
+@@ -57,7 +57,7 @@ html, body {
+ body {
+   background-color: var(--bg-dark);
+   background-image: 
+-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
++    radial-gradient(at 0% 0%, rgba(63, 181, 162, 0.12) 0px, transparent 50%),
+     radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.08) 0px, transparent 50%),
+     radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 60%);
+   background-attachment: fixed;
+@@ -71,8 +71,8 @@ body {
+ /* Glass Panels */
+ .glass-panel {
+   background: var(--bg-card);
+-  backdrop-filter: blur(16px);
+-  -webkit-backdrop-filter: blur(16px);
++  backdrop-filter: none;
++  -webkit-backdrop-filter: none;
+   border: 1px solid var(--border-light);
+   border-radius: var(--radius-lg);
+   box-shadow: var(--shadow-lg);
+@@ -89,7 +89,7 @@ body {
+   top: 0;
+   z-index: 100;
+   background: rgba(9, 13, 22, 0.85);
+-  backdrop-filter: blur(20px);
++  backdrop-filter: none;
+   border-bottom: 1px solid var(--border-light);
+ }
+ 
+@@ -285,7 +285,7 @@ body {
+   width: 58px;
+   height: 58px;
+   border-radius: 50%;
+-  background: linear-gradient(135deg, #4F46E5, #9333EA);
++  background: linear-gradient(135deg, #2E9484, #0E5A50);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+@@ -299,7 +299,7 @@ body {
+   left: -4px;
+   right: -4px;
+   bottom: -4px;
+-  border: 2px solid #818CF8;
++  border: 2px solid #7FD6C8;
+   border-radius: 50%;
+   animation: pulseAnim 2s infinite ease-out;
+ }
+@@ -324,9 +324,9 @@ body {
+ }
+ 
+ .telc-badge {
+-  background: rgba(99, 102, 241, 0.2);
+-  color: #A5B4FC;
+-  border: 1px solid rgba(99, 102, 241, 0.4);
++  background: rgba(63, 181, 162, 0.2);
++  color: #9FD3C9;
++  border: 1px solid rgba(63, 181, 162, 0.4);
+   padding: 3px 10px;
+   border-radius: var(--radius-full);
+   font-size: 0.75rem;
+@@ -432,7 +432,7 @@ body {
+ 
+ .examiner-bubble {
+   background: linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(124, 58, 237, 0.1));
+-  border: 1px solid rgba(99, 102, 241, 0.3);
++  border: 1px solid rgba(63, 181, 162, 0.3);
+   border-radius: var(--radius-lg);
+   padding: 20px;
+   position: relative;
+@@ -443,7 +443,7 @@ body {
+   justify-content: space-between;
+   align-items: center;
+   margin-bottom: 8px;
+-  color: #A5B4FC;
++  color: #9FD3C9;
+   font-size: 0.88rem;
+ }
+ 
+@@ -490,7 +490,7 @@ body {
+ 
+ /* Buttons */
+ .btn-primary {
+-  background: linear-gradient(135deg, #6366F1, #4F46E5);
++  background: linear-gradient(135deg, #2E9484, #2E9484);
+   color: #FFFFFF;
+   border: none;
+   border-radius: var(--radius-md);
+@@ -499,7 +499,7 @@ body {
+   font-weight: 600;
+   font-size: 0.88rem;
+   cursor: pointer;
+-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
++  box-shadow: 0 4px 12px rgba(63, 181, 162, 0.3);
+   transition: all 0.2s ease;
+   display: inline-flex;
+   align-items: center;
+@@ -508,7 +508,7 @@ body {
+ 
+ .btn-primary:hover {
+   transform: translateY(-1px);
+-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45);
++  box-shadow: 0 6px 16px rgba(63, 181, 162, 0.45);
+ }
+ 
+ .btn-secondary {
+@@ -529,8 +529,8 @@ body {
+ }
+ 
+ .audio-btn, .small-audio-btn {
+-  background: rgba(99, 102, 241, 0.15);
+-  border: 1px solid rgba(99, 102, 241, 0.3);
++  background: rgba(63, 181, 162, 0.15);
++  border: 1px solid rgba(63, 181, 162, 0.3);
+   color: #C7D2FE;
+   border-radius: var(--radius-full);
+   padding: 6px 14px;
+@@ -540,7 +540,7 @@ body {
+ }
+ 
+ .audio-btn:hover, .small-audio-btn:hover {
+-  background: rgba(99, 102, 241, 0.3);
++  background: rgba(63, 181, 162, 0.3);
+   color: #FFFFFF;
+ }
+ 
+@@ -634,7 +634,7 @@ body {
+ 
+ .input-container textarea:focus {
+   border-color: var(--primary);
+-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
++  box-shadow: 0 0 0 2px rgba(63, 181, 162, 0.2);
+ }
+ 
+ .response-footer {
+@@ -719,7 +719,7 @@ body {
+   margin-top: 28px;
+   padding: 26px;
+   background: rgba(20, 27, 45, 0.95);
+-  border: 1px solid rgba(99, 102, 241, 0.3);
++  border: 1px solid rgba(63, 181, 162, 0.3);
+ }
+ 
+ .feedback-top-header {
+@@ -809,7 +809,7 @@ body {
+ 
+ .bar-fill {
+   height: 100%;
+-  background: linear-gradient(90deg, #6366F1, #10B981);
++  background: linear-gradient(90deg, #2E9484, #10B981);
+   border-radius: var(--radius-full);
+   transition: width 0.6s ease;
+ }
+@@ -829,8 +829,8 @@ body {
+ }
+ 
+ .de-comment {
+-  background: rgba(99, 102, 241, 0.08);
+-  border-color: rgba(99, 102, 241, 0.25);
++  background: rgba(63, 181, 162, 0.08);
++  border-color: rgba(63, 181, 162, 0.25);
+ }
+ 
+ .ml-comment {
+@@ -848,7 +848,7 @@ body {
+   font-size: 0.78rem;
+   font-weight: 700;
+   margin-bottom: 8px;
+-  color: #A5B4FC;
++  color: #9FD3C9;
+ }
+ 
+ .ml-badge { color: #FCD34D; font-family: var(--font-sans); }
+@@ -889,9 +889,9 @@ body {
+ }
+ 
+ .tag-connector {
+-  background: rgba(99, 102, 241, 0.2);
++  background: rgba(63, 181, 162, 0.2);
+   color: #C7D2FE;
+-  border: 1px solid rgba(99, 102, 241, 0.35);
++  border: 1px solid rgba(63, 181, 162, 0.35);
+ }
+ 
+ .tag-nvv {
+@@ -991,7 +991,7 @@ body {
+ }
+ 
+ .quick-phrases-drawer summary {
+-  color: #A5B4FC;
++  color: #9FD3C9;
+   font-size: 0.9rem;
+   cursor: pointer;
+   font-weight: 600;
+@@ -1015,8 +1015,8 @@ body {
+ }
+ 
+ .phrase-mini-card:hover {
+-  background: rgba(99, 102, 241, 0.15);
+-  border-color: rgba(99, 102, 241, 0.4);
++  background: rgba(63, 181, 162, 0.15);
++  border-color: rgba(63, 181, 162, 0.4);
+ }
+ 
+ .phrase-de {
+@@ -1108,8 +1108,8 @@ body {
+ }
+ 
+ .step-badge {
+-  background: rgba(99, 102, 241, 0.2);
+-  color: #A5B4FC;
++  background: rgba(63, 181, 162, 0.2);
++  color: #9FD3C9;
+   font-size: 0.75rem;
+   font-weight: 700;
+   padding: 4px 8px;
+@@ -1237,7 +1237,7 @@ body {
+ 
+ .cat-title h4 {
+   font-family: var(--font-heading);
+-  color: #A5B4FC;
++  color: #9FD3C9;
+   font-size: 1.05rem;
+   margin-bottom: 14px;
+ }
+@@ -1345,7 +1345,7 @@ body {
+ 
+ .card-front {
+   background: linear-gradient(135deg, #1E1B4B, #312E81);
+-  border: 1px solid rgba(129, 140, 248, 0.3);
++  border: 1px solid rgba(127, 214, 200, 0.3);
+ }
+ 
+ .card-back {
+@@ -1446,7 +1446,7 @@ body {
+   left: 0;
+   right: 0;
+   background: rgba(11, 15, 25, 0.92);
+-  backdrop-filter: blur(12px);
++  backdrop-filter: none;
+   border-top: 1px solid var(--border-light);
+   padding: 8px 24px;
+   font-size: 0.8rem;
+@@ -1590,7 +1590,7 @@ body.mode-en-only .en-sample {
+ }
+ 
+ .en-subtext {
+-  color: #A5B4FC;
++  color: #9FD3C9;
+   font-size: 0.88rem;
+   margin-top: 6px;
+   line-height: 1.4;
+@@ -1658,22 +1658,22 @@ body.mode-en-only .en-sample {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+-  background: linear-gradient(135deg, #4F46E5, #6366F1);
++  background: linear-gradient(135deg, #2E9484, #2E9484);
+   color: #FFFFFF;
+-  border: 1px solid rgba(165, 180, 252, 0.4);
++  border: 1px solid rgba(127, 214, 200, 0.4);
+   padding: 8px 16px;
+   border-radius: var(--radius-full);
+   font-size: 0.85rem;
+   font-weight: 600;
+   cursor: pointer;
+   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
++  box-shadow: 0 4px 12px rgba(63, 181, 162, 0.25);
+ }
+ 
+ .btn-auth-login:hover {
+   transform: translateY(-2px);
+-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+-  background: linear-gradient(135deg, #4338CA, #4F46E5);
++  box-shadow: 0 6px 18px rgba(63, 181, 162, 0.4);
++  background: linear-gradient(135deg, #27806F, #2E9484);
+ }
+ 
+ .user-profile-pill {
+@@ -1754,7 +1754,7 @@ body.mode-en-only .en-sample {
+   position: fixed;
+   inset: 0;
+   background: rgba(0, 0, 0, 0.75);
+-  backdrop-filter: blur(8px);
++  backdrop-filter: none;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+@@ -1767,7 +1767,7 @@ body.mode-en-only .en-sample {
+   width: 100%;
+   max-width: 480px;
+   background: rgba(15, 23, 42, 0.95);
+-  border: 1px solid rgba(99, 102, 241, 0.35);
++  border: 1px solid rgba(63, 181, 162, 0.35);
+   border-radius: var(--radius-xl);
+   padding: 32px 28px;
+   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+@@ -1833,7 +1833,7 @@ body.mode-en-only .en-sample {
+ .auth-tab-btn.active {
+   background: var(--primary);
+   color: #FFFFFF;
+-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
++  box-shadow: 0 2px 8px rgba(63, 181, 162, 0.3);
+ }
+ 
+ .auth-form h3 {
+@@ -1875,7 +1875,7 @@ body.mode-en-only .en-sample {
+ 
+ .form-group input:focus {
+   border-color: var(--primary);
+-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
++  box-shadow: 0 0 0 3px rgba(63, 181, 162, 0.25);
+ }
+ 
+ .auth-error-msg {
+@@ -1898,8 +1898,8 @@ body.mode-en-only .en-sample {
+ .demo-credentials-box {
+   margin-top: 18px;
+   padding: 12px;
+-  background: rgba(99, 102, 241, 0.1);
+-  border: 1px dashed rgba(99, 102, 241, 0.3);
++  background: rgba(63, 181, 162, 0.1);
++  border: 1px dashed rgba(63, 181, 162, 0.3);
+   border-radius: var(--radius-md);
+   color: #C7D2FE;
+   font-size: 0.82rem;
+@@ -2118,7 +2118,7 @@ body.mode-en-only .en-sample {
+   background: rgba(30, 41, 59, 0.85);
+   border: 1px solid rgba(245, 158, 11, 0.4);
+   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+-  backdrop-filter: blur(8px);
++  backdrop-filter: none;
+   animation: fadeIn 0.25s ease-out;
+ }
+ 
+@@ -2315,7 +2315,7 @@ body.mode-en-only .en-sample {
+   align-items: center;
+   gap: 12px;
+   background: rgba(15, 23, 42, 0.85);
+-  border: 1px solid rgba(99, 102, 241, 0.35);
++  border: 1px solid rgba(63, 181, 162, 0.35);
+   border-radius: var(--radius-md);
+   padding: 8px 14px;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+@@ -2358,8 +2358,8 @@ body.mode-en-only .en-sample {
+ }
+ 
+ .btn-timer-ctrl {
+-  background: rgba(99, 102, 241, 0.2);
+-  border: 1px solid rgba(99, 102, 241, 0.4);
++  background: rgba(63, 181, 162, 0.2);
++  border: 1px solid rgba(63, 181, 162, 0.4);
+   color: #E0E7FF;
+   border-radius: var(--radius-sm);
+   padding: 5px 10px;
+@@ -2370,7 +2370,7 @@ body.mode-en-only .en-sample {
+ }
+ 
+ .btn-timer-ctrl:hover {
+-  background: rgba(99, 102, 241, 0.4);
++  background: rgba(63, 181, 162, 0.4);
+   color: #FFFFFF;
+ }
+ 
+@@ -2424,7 +2424,7 @@ body.mode-en-only .en-sample {
+ 
+ .styled-search-input:focus {
+   border-color: var(--primary);
+-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
++  box-shadow: 0 0 0 3px rgba(63, 181, 162, 0.25);
+ }
+ 
+ .styled-search-input::placeholder {
+diff --git a/css/theme.css b/css/theme.css
+new file mode 100644
+index 0000000..6ea55bd
+--- /dev/null
++++ b/css/theme.css
+@@ -0,0 +1,56 @@
++/* Kerala Kasavu theme: loaded after style.css. Deep teal surfaces, gold border accent, no glass/glow. */
++:root{
++  --bg-dark:#0B1714; --bg-card:#12231F; --bg-card-hover:#183029; --bg-panel:#10201C;
++  --primary:#2E9484; --primary-light:#7FD6C8; --primary-glow:transparent;
++  --accent-gold:#D9A93A; --accent-gold-glow:transparent;
++  --text-main:#EEF4F1; --text-secondary:#A9BDB6; --text-muted:#7E948D; --text-malayalam:#E8C766; --text-english:#9FD3C9;
++  --border-light:#223933; --border-active:#2E9484;
++  --font-heading:'Bricolage Grotesque','Outfit',sans-serif; --font-sans:'Hanken Grotesk','Plus Jakarta Sans',sans-serif; --font-ml:'Noto Sans Malayalam','Manjari',sans-serif;
++  --radius-sm:6px; --radius-md:10px; --radius-lg:14px;
++  --shadow-sm:none; --shadow-lg:0 14px 30px -18px rgba(0,0,0,.7); --shadow-glow:none;
++}
++body{background-image:none;background-color:var(--bg-dark)}
++body::before{content:"";display:block;height:10px;background:repeating-linear-gradient(90deg,#D9A93A 0 3px,transparent 3px 6px),linear-gradient(#D9A93A,#D9A93A) bottom/100% 2px no-repeat}
++.glass-panel,.examiner-card,.topic-card,.plan-card,.redemittel-cat-card,.tip-card,.task-check-card,.feedback-card{background:var(--bg-card);border:1px solid var(--border-light);box-shadow:none}
++h1,h2,h3,.plan-price,.score-number{font-family:var(--font-heading);letter-spacing:-.015em}
++
++/* Header: wordmark instead of flags + emoji */
++.app-header{background:var(--bg-dark);border-bottom:1px solid var(--border-light);position:static}
++.flag-de,.flag-in,.tab-icon,.gold-crown,.mic-alert-icon{display:none!important}
++.logo-badge{background:none;border:0;padding:0}
++.badge-telc{background:var(--accent-gold);color:#1a1300;border-radius:6px;padding:4px 10px;font:800 15px var(--font-heading)}
++.brand-text h1{font-size:1.35rem}
++.subtitle{color:var(--text-secondary);font-size:.85rem}
++.control-pill{background:transparent;border:1px solid var(--border-light);border-radius:8px}
++.header-select{background:transparent;color:var(--text-main)}
++
++/* Tabs: underline style, no pills */
++.main-nav-tabs{border-top:1px solid var(--border-light)}
++.nav-tab-btn{background:transparent;border:0;border-bottom:3px solid transparent;border-radius:0;color:var(--text-secondary);padding:12px 16px;box-shadow:none}
++.nav-tab-btn:hover{color:var(--text-main);background:transparent}
++.nav-tab-btn.active{color:var(--text-main);border-bottom-color:var(--accent-gold);background:transparent;box-shadow:none}
++.tab-badge{background:var(--bg-card-hover);color:var(--text-main);border-radius:6px}
++
++/* Buttons */
++.btn-primary,.btn-evaluate,.auth-submit-btn{background:var(--primary);color:#fff;border:0;box-shadow:none;border-radius:8px}
++.btn-primary:hover,.btn-evaluate:hover{background:#27806F;transform:none;box-shadow:none}
++.btn-secondary{background:transparent;border:1.5px solid var(--primary);color:var(--primary-light);border-radius:8px}
++.upgrade-chip-btn{background:var(--accent-gold);color:#1a1300;border:0;border-radius:8px;font-weight:700;box-shadow:none}
++button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent-gold);outline-offset:2px}
++
++/* Bars, modals, status bar */
++.exam-status-bar{background:var(--bg-panel);border-top:1px solid var(--border-light)}
++.modal-backdrop{background:rgba(4,12,10,.7)}
++.highlighted-plan{border:2px solid var(--accent-gold)}
++.gold-tag{background:var(--accent-gold);color:#1a1300}
++.ml-box{background:rgba(217,169,58,.08);border-color:rgba(217,169,58,.3)}
++.demo-credentials-box{display:none}
++.examiner-avatar-pulse .pulse-ring{animation:none}
++@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
++@media (max-width:768px){.brand-text h1{font-size:1.1rem}.nav-tab-btn{padding:10px 12px}}
++.btn-auth-login{background:var(--primary)!important;border:0!important;border-radius:8px!important;box-shadow:none!important}
++.btn-auth-login:hover{background:#27806F!important;transform:none!important}
++.examiner-avatar-pulse{background:var(--primary)!important}
++.status-bar-container{gap:12px;flex-wrap:wrap}
++.upgrade-chip-btn{white-space:nowrap}
++.exam-timer-widget{background:var(--bg-panel)!important;border:1px solid var(--border-light)!important}
+diff --git a/index.html b/index.html
+index 17989ea..34a2074 100644
+--- a/index.html
++++ b/index.html
+@@ -3,15 +3,16 @@
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-  <title>telc B2 Mündliche Prüfung Trainer • Kerala Edition (മലയാളം & English)</title>
++  <title>telc B2 Mündlich Trainer · Kerala Edition</title>
+   <meta name="description" content="Authentic Telc B2 German Oral Exam Preparation Web App exclusively designed for B2 students from Kerala with German, English, and Malayalam translations.">
+   
+   <!-- Google Fonts: Plus Jakarta Sans & Manjari (Malayalam) -->
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+-  <link href="https://fonts.googleapis.com/css2?family=Manjari:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
++  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=Noto+Sans+Malayalam:wght@400;600&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+   
+   <link rel="stylesheet" href="css/style.css">
++  <link rel="stylesheet" href="css/theme.css">
+ </head>
+ <body class="mode-trilingual">
+   <!-- Top App Navigation -->
+@@ -19,9 +20,7 @@
+     <div class="header-container">
+       <div class="brand-group">
+         <div class="logo-badge">
+-          <span class="flag-de">🇩🇪</span>
+           <span class="badge-telc">telc B2</span>
+-          <span class="flag-in">🌴</span>
+         </div>
+         <div class="brand-text">
+           <h1>telc B2 Mündlich • Kerala Edition</h1>
+@@ -32,17 +31,17 @@
+       <!-- Quick Audio, Language & User Controls -->
+       <div class="header-controls">
+         <div class="control-pill">
+-          <label for="langModeSelect">🌐 ഭാഷ:</label>
++          <label for="langModeSelect">ഭാഷ:</label>
+           <select id="langModeSelect" class="header-select">
+-            <option value="trilingual" selected>🇩🇪 + 🇮🇳 മലയാളം + 🇬🇧 English</option>
+-            <option value="en-only">🇩🇪 + 🇬🇧 English Only (No Malayalam)</option>
+-            <option value="ml-only">🇩🇪 + 🇮🇳 മലയാളം Focus</option>
+-            <option value="de-only">🇩🇪 Nur Deutsch (Immersion)</option>
++            <option value="trilingual" selected>Deutsch + മലയാളം + English</option>
++            <option value="en-only">Deutsch + English</option>
++            <option value="ml-only">Deutsch + മലയാളം</option>
++            <option value="de-only">Nur Deutsch</option>
+           </select>
+         </div>
+ 
+         <div class="control-pill">
+-          <label for="speechRateSelect" id="speechRateLabel">⚡ Tempo:</label>
++          <label for="speechRateSelect" id="speechRateLabel">Tempo:</label>
+           <select id="speechRateSelect" class="header-select">
+             <option value="0.8">0.8x (Slow)</option>
+             <option value="1.0" selected>1.0x (Normal)</option>
+@@ -51,7 +50,7 @@
+         </div>
+ 
+         <div class="control-pill voice-pill">
+-          <label for="voiceSelect">🗣️ Stimme:</label>
++          <label for="voiceSelect">Stimme:</label>
+           <select id="voiceSelect" class="header-select">
+             <option>Lade Stimmen...</option>
+           </select>
+@@ -145,7 +144,7 @@
+       </div>
+       <div class="status-shortcuts">
+         <button class="upgrade-chip-btn" id="btnOpenUpgradeModal">
+-          ⭐ പ്രീമിയം ഫീച്ചറുകൾ (View Premium Features)
++          പ്രീമിയം ഫീച്ചറുകൾ
+         </button>
+       </div>
+     </div>
+@@ -174,10 +173,7 @@
+         </div>
+         <div id="loginError" class="auth-error-msg" style="display: none;"></div>
+         <button type="submit" class="btn-primary auth-submit-btn">ലോഗിൻ ചെയ്യുക (Login)</button>
+-        <div class="demo-credentials-box">
+-          <small>💡 Quick Demo Accounts:<br>• Free: <code>anisha@gmail.com</code> / <code>password123</code><br>• Premium: <code>rahul@demo.com</code> / <code>password123</code></small>
+-        </div>
+-      </form>
++              </form>
+ 
+       <!-- Register Form -->
+       <form id="registerForm" class="auth-form" style="display: none;">
+@@ -206,7 +202,7 @@
+     <div class="modal-card glass-panel upgrade-modal-card">
+       <button class="modal-close-btn" id="btnCloseUpgradeModal">✕</button>
+       <div class="upgrade-header">
+-        <span class="gold-crown">👑</span>
++        
+         <h2>telc B2 Premium Membership</h2>
+         <p class="subtitle-ml">കേരളത്തിലെ വിദ്യാർത്ഥികൾക്കായി പ്രത്യേകമായി രൂപകൽപ്പന ചെയ്ത ഫുൾ ആക്സസ്</p>
+       </div>
+@@ -217,30 +213,30 @@
+           <h3>Free Tier</h3>
+           <div class="plan-price">₹0 <span>/ എപ്പോഴും സൗജന്യം</span></div>
+           <ul class="plan-features">
+-            <li>✓ Teil 1, 2, 3 അടിസ്ഥാന മാതൃകകൾ</li>
+-            <li>✓ ഒരു ദിവസം 2 പ്രാവശ്യം Prüfer Simulation</li>
+-            <li>✓ അടിസ്ഥാന B2 Redemittel & മലയാള അർത്ഥം</li>
+-            <li>✓ മലയാളികൾക്കുള്ള ഗ്രാമർ ടിപ്പുകൾ</li>
++            <li>Teil 1, 2, 3 അടിസ്ഥാന മാതൃകകൾ</li>
++            <li>ഒരു ദിവസം 2 പ്രാവശ്യം Prüfer Simulation</li>
++            <li>അടിസ്ഥാന B2 Redemittel & മലയാള അർത്ഥം</li>
++            <li>മലയാളികൾക്കുള്ള ഗ്രാമർ ടിപ്പുകൾ</li>
+           </ul>
+           <button class="btn-secondary w-full" id="btnContinueFree">സൗജന്യ വേർഷൻ തുടരുക</button>
+         </div>
+ 
+         <div class="plan-card premium-plan-card highlighted-plan">
+-          <div class="plan-tag gold-tag">⭐ പൂർണ്ണ ആക്സസ് (VIP)</div>
++          <div class="plan-tag gold-tag">പൂർണ്ണ ആക്സസ്</div>
+           <h3>Premium Tier</h3>
+           <div class="plan-price gold-price">₹0 <span>(Early Beta Pass)</span></div>
+           <ul class="plan-features">
+-            <li>⭐ <strong>പരിധിയില്ലാത്ത</strong> AI Prüfer മോക്ക് എക്സാം</li>
+-            <li>⭐ എല്ലാ ഭാഗങ്ങളിലെയും സമ്പൂർണ്ണ ചോദ്യശേഖരം</li>
+-            <li>⭐ ആശുപത്രി & നേഴ്സിംഗ് സ്പെഷ്യൽ B2 കൺവർസേഷൻസ്</li>
+-            <li>⭐ 50+ Nomen-Verb-Verbindungen സമ്പൂർണ്ണ ഓഡിയോ ഡെക്ക്</li>
+-            <li>⭐ വിശദമായ മലയാളം ഫീഡ്‌ബാക്കും മാർക്ക് വിശകലനവും</li>
++            <li><strong>പരിധിയില്ലാത്ത</strong> AI Prüfer മോക്ക് എക്സാം</li>
++            <li>എല്ലാ ഭാഗങ്ങളിലെയും സമ്പൂർണ്ണ ചോദ്യശേഖരം</li>
++            <li>ആശുപത്രി & നേഴ്സിംഗ് സ്പെഷ്യൽ B2 കൺവർസേഷൻസ്</li>
++            <li>50+ Nomen-Verb-Verbindungen സമ്പൂർണ്ണ ഓഡിയോ ഡെക്ക്</li>
++            <li>വിശദമായ മലയാളം ഫീഡ്‌ബാക്കും മാർക്ക് വിശകലനവും</li>
+           </ul>
+ 
+           <div class="promo-box">
+-            <label>🔐 സൗജന്യ പ്രീമിയം കോഡ് (Beta Promo Code):</label>
++            <label>സൗജന്യ പ്രീമിയം കോഡ് (Beta Promo Code):</label>
+             <div class="promo-input-row">
+-              <input type="text" id="promoCodeInput" placeholder="Enter: KERALAB2VIP">
++              <input type="text" id="promoCodeInput" placeholder="Promo code">
+               <button class="btn-primary" id="btnRedeemPromo">അൺലോക്ക്</button>
+             </div>
+             <div id="promoFeedback" class="promo-feedback-msg"></div>
+diff --git a/js/app.js b/js/app.js
+index 7122d9c..958e27f 100644
+--- a/js/app.js
++++ b/js/app.js
+@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
+     const user = auth.currentUser;
+ 
+     if (!user) {
+-      const loginText = state.langMode === 'en-only' ? '👤 Login / Sign Up' : (state.langMode === 'de-only' ? '👤 Anmelden' : '👤 ലോഗിൻ / സൈൻ അപ്പ്');
++      const loginText = state.langMode === 'en-only' ? 'Login / Sign Up' : (state.langMode === 'de-only' ? 'Anmelden' : 'ലോഗിൻ / സൈൻ അപ്പ്');
+       userAuthContainer.innerHTML = `
+         <button class="btn-auth-login" id="btnOpenLoginModal">
+           ${loginText}
+@@ -89,10 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
+       if (btn) btn.addEventListener('click', () => openAuthModal('login'));
+     } else {
+       const isPrem = user.role === 'premium';
+-      const unlockText = state.langMode === 'en-only' ? '👑 Unlock VIP' : (state.langMode === 'de-only' ? '👑 Upgrade' : '👑 അൺലോക്ക്');
++      const unlockText = state.langMode === 'en-only' ? 'Unlock VIP' : (state.langMode === 'de-only' ? 'Upgrade' : 'അൺലോക്ക്');
+       userAuthContainer.innerHTML = `
+         <div class="user-profile-pill">
+-          <span class="user-avatar-badge">${isPrem ? '⭐' : '👤'}</span>
++          <span class="user-avatar-badge">${isPrem ? '' : ''}</span>
+           <div class="user-info-text">
+             <span class="user-name">${user.name}</span>
+             <span class="user-plan-badge ${isPrem ? 'badge-prem' : 'badge-free'}">
+@@ -105,8 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             </button>
+           ` : ''}
+           <button class="btn-logout-mini" id="btnLogoutUser" title="Logout">
+-            🚪
+-          </button>
++                      </button>
+         </div>
+       `;
+ 
+@@ -317,16 +316,16 @@ document.addEventListener('DOMContentLoaded', () => {
+     // Dynamic Header Labels
+     const langLabel = document.querySelector('label[for="langModeSelect"]');
+     if (langLabel) {
+-      if (state.langMode === 'en-only') langLabel.textContent = '🌐 Language:';
+-      else if (state.langMode === 'de-only') langLabel.textContent = '🌐 Sprache:';
+-      else langLabel.textContent = '🌐 ഭാഷ:';
++      if (state.langMode === 'en-only') langLabel.textContent = 'Language:';
++      else if (state.langMode === 'de-only') langLabel.textContent = 'Sprache:';
++      else langLabel.textContent = 'ഭാഷ:';
+     }
+ 
+     const voiceLabel = document.querySelector('label[for="voiceSelect"]');
+     if (voiceLabel) {
+-      if (state.langMode === 'en-only') voiceLabel.textContent = '🗣️ Voice:';
+-      else if (state.langMode === 'de-only') voiceLabel.textContent = '🗣️ Stimme:';
+-      else voiceLabel.textContent = '🗣️ Stimme / Voice:';
++      if (state.langMode === 'en-only') voiceLabel.textContent = 'Voice:';
++      else if (state.langMode === 'de-only') voiceLabel.textContent = 'Stimme:';
++      else voiceLabel.textContent = 'Stimme / Voice:';
+     }
+ 
+     // Dynamic Tempo Option Labels
+@@ -341,11 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
+     const upgradeChip = document.getElementById('btnOpenUpgradeModal');
+     if (upgradeChip) {
+       if (state.langMode === 'en-only') {
+-        upgradeChip.textContent = '⭐ Premium Features (View VIP Access)';
++        upgradeChip.textContent = 'Premium features';
+       } else if (state.langMode === 'de-only') {
+-        upgradeChip.textContent = '⭐ Premium-Funktionen (VIP)';
++        upgradeChip.textContent = 'Premium-Funktionen (VIP)';
+       } else {
+-        upgradeChip.textContent = '⭐ പ്രീമിയം ഫീച്ചറുകൾ (View Premium Features)';
++        upgradeChip.textContent = 'പ്രീമിയം ഫീച്ചറുകൾ';
+       }
+     }
+ 
+@@ -419,14 +418,14 @@ document.addEventListener('DOMContentLoaded', () => {
+         <div class="examiner-header">
+           <div class="examiner-profile">
+             <div class="examiner-avatar-pulse">
+-              <span class="avatar-icon">👩‍🏫</span>
++              <span class="avatar-icon"></span>
+               <span class="pulse-ring"></span>
+             </div>
+             <div>
+               <div class="examiner-name-badge">
+                 <span class="name">${examiner.name}</span>
+                 <span class="badge telc-badge">telc B2 Prüferin</span>
+-                ${isPrem ? '<span class="badge badge-prem">⭐ Premium Active</span>' : '<span class="badge badge-free">Free Mode (2/day)</span>'}
++                ${isPrem ? '<span class="badge badge-prem">Premium Active</span>' : '<span class="badge badge-free">Free Mode (2/day)</span>'}
+               </div>
+               <p class="examiner-subtitle">Offizielle Prüfungssimulation • Official Telc B2 Examiner Mode</p>
+             </div>
+@@ -447,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
+               <select id="taskSelect" class="styled-select">
+                 ${currentTaskList.map((t, i) => `
+                   <option value="${i}" ${i === state.selectedTaskIndex ? 'selected' : ''}>
+-                    ${t.title} ${(!isPrem && i > 1) ? '🔒 (Premium)' : ''}
++                    ${t.title} ${(!isPrem && i > 1) ? '(Premium)' : ''}
+                   </option>
+                 `).join('')}
+               </select>
+@@ -456,16 +455,16 @@ document.addEventListener('DOMContentLoaded', () => {
+             <!-- Authentic Telc Exam Timer Widget -->
+             <div class="exam-timer-widget">
+               <div class="timer-display-group">
+-                <span class="timer-icon">⏱️</span>
++                <span class="timer-icon"></span>
+                 <span class="timer-digits" id="examTimerDisplay">${formatTimerDigits(state.timerSeconds)}</span>
+                 <span class="timer-label-part" id="examTimerLabel">${state.examPart === 'teil1' ? 'Teil 1 (3 Min.)' : 'Teil 2/3 (5 Min.)'}</span>
+               </div>
+               <div class="timer-action-buttons">
+                 <button class="btn-timer-ctrl ${state.isTimerRunning ? 'timer-running' : ''}" id="btnToggleTimer">
+-                  ${state.isTimerRunning ? '⏸️ Pause' : '▶️ Start'}
++                  ${state.isTimerRunning ? '⏸Pause' : '▶Start'}
+                 </button>
+                 <button class="btn-timer-ctrl btn-timer-reset" id="btnResetTimer" title="Zeit zurücksetzen">
+-                  🔄 Reset
++                  Reset
+                 </button>
+               </div>
+             </div>
+@@ -475,9 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
+         <!-- Task Briefing Box with Trilingual Guidance -->
+         <div class="task-briefing-box">
+           <div class="briefing-header">
+-            <h4><span class="icon">📋</span> ${currentTask.title}</h4>
++            <h4><span class="icon"></span> ${currentTask.title}</h4>
+             <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.prompt || currentTask.contextText || currentTask.situation)}')">
+-              🔊 Vorlesen (Read Task)
++              Vorlesen (Read Task)
+             </button>
+           </div>
+           <p class="de-text task-body">${nl2br(currentTask.prompt || currentTask.contextText || currentTask.situation)}</p>
+@@ -493,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
+           <div class="examiner-bubble">
+             <div class="bubble-meta">
+               <strong>${examiner.name} sagt:</strong>
+-              <button class="small-audio-btn" id="btnSpeakExaminerPrompt">🔊 Hören</button>
++              <button class="small-audio-btn" id="btnSpeakExaminerPrompt">Hören</button>
+             </div>
+             <p class="examiner-speech-text" id="examinerSpeechText">
+               ${getExaminerIntroSpeech(state.examPart, currentTask)}
+@@ -510,16 +509,16 @@ document.addEventListener('DOMContentLoaded', () => {
+         <!-- Student Input & Speaking Studio -->
+         <div class="student-response-panel">
+           <div class="response-header">
+-            <h4><span class="icon">🎙️</span> Ihre Antwort (Your Response${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / നിങ്ങളുടെ മറുപടി' : ''})</h4>
++            <h4><span class="icon"></span> Ihre Antwort (Your Response${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / നിങ്ങളുടെ മറുപടി' : ''})</h4>
+             <div class="recording-controls">
+               <button class="btn-primary" id="btnVoiceRecord">
+-                <span id="micIcon">🎤</span> <span id="micBtnText">Sprechen (Start Mic)</span>
++                <span id="micIcon"></span> <span id="micBtnText">Sprechen (Start Mic)</span>
+               </button>
+               <button class="btn-secondary" id="btnAudioSaveRecord">
+-                ⏺️ Aufnahme für Analyse (Record Audio)
++                ⏺Aufnahme für Analyse (Record Audio)
+               </button>
+               <button class="btn-sample-insert" id="btnPasteSampleAnswer" title="Musterantwort einfügen">
+-                💡 Musterantwort (Sample Answer)
++                Musterantwort (Sample Answer)
+               </button>
+             </div>
+           </div>
+@@ -545,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             <div class="action-buttons">
+               <button class="btn-clear" id="btnClearResponse">Löschen</button>
+               <button class="btn-evaluate" id="btnEvaluateResponse">
+-                ⭐ Antworten & Prüfer-Feedback erhalten
++                Antworten & Prüfer-Feedback erhalten
+               </button>
+             </div>
+           </div>
+@@ -562,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
+         <!-- Quick B2 Redemittel Drawer -->
+         <div class="quick-phrases-drawer">
+           <details>
+-            <summary>💡 Empfohlene B2 Redemittel für dieses Thema (Helpful phrases${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' with Malayalam' : ''})</summary>
++            <summary>Empfohlene B2 Redemittel für dieses Thema (Helpful phrases${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' with Malayalam' : ''})</summary>
+             <div class="quick-phrases-grid">
+               ${getQuickPhrasesForPart(state.examPart)}
+             </div>
+@@ -616,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
+       <div class="phrase-mini-card" onclick="insertPhraseToInput('${escapeForAttr(p.de)}')">
+         <div class="phrase-de">
+           <strong>${p.de}</strong>
+-          <button class="mini-speak" onclick="event.stopPropagation(); speakGerman('${escapeForAttr(p.de)}')">🔊</button>
++          <button class="mini-speak" onclick="event.stopPropagation(); speakGerman('${escapeForAttr(p.de)}')"></button>
+         </div>
+         <div class="phrase-ml">${p.ml}</div>
+         ${p.en ? `<div class="phrase-en">${p.en}</div>` : ''}
+@@ -696,7 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
+       }
+     }
+     if (btnToggle) {
+-      btnToggle.textContent = state.isTimerRunning ? '⏸️ Pause' : '▶️ Start';
++      btnToggle.textContent = state.isTimerRunning ? '⏸Pause' : '▶Start';
+       btnToggle.classList.toggle('timer-running', state.isTimerRunning);
+     }
+     if (label) {
+@@ -738,11 +737,11 @@ document.addEventListener('DOMContentLoaded', () => {
+         titleDe = 'Mikrofonzugriff blockiert';
+         titleMl = 'മൈക്രോഫോൺ അനുമതി തടഞ്ഞിരിക്കുന്നു';
+         desc = `
+-          <p><strong>🇩🇪 Hinweis:</strong> Der Browser hat den Zugriff auf das Mikrofon blockiert. Klicken Sie in der Adressleiste auf das Schlosssymbol 🔒 und wählen Sie <strong>„Zulassen (Allow)“</strong>.</p>
+-          <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> ബ്രൗസറിന്റെ URL ബാറിലുള്ള <strong>ലോക്ക് (🔒) ചിഹ്നത്തിൽ</strong> ക്ലിക്ക് ചെയ്ത് Microphone <strong>'Allow' (അനുമതി)</strong> നൽകുക. അല്ലെങ്കിൽ താഴെയുള്ള ബട്ടൺ വഴി Musterantwort ചേർക്കാം.</p>
+-          <p class="mic-alert-en"><strong>🇬🇧 English:</strong> Browser microphone access is blocked. Click the lock/tune icon 🔒 in the address bar and enable microphone permissions.</p>
++          <p><strong>🇩🇪 Hinweis:</strong> Der Browser hat den Zugriff auf das Mikrofon blockiert. Klicken Sie in der Adressleiste auf das Schlosssymbol und wählen Sie <strong>„Zulassen (Allow)“</strong>.</p>
++          <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> ബ്രൗസറിന്റെ URL ബാറിലുള്ള <strong>ലോക്ക് () ചിഹ്നത്തിൽ</strong> ക്ലിക്ക് ചെയ്ത് Microphone <strong>'Allow' (അനുമതി)</strong> നൽകുക. അല്ലെങ്കിൽ താഴെയുള്ള ബട്ടൺ വഴി Musterantwort ചേർക്കാം.</p>
++          <p class="mic-alert-en"><strong>🇬🇧 English:</strong> Browser microphone access is blocked. Click the lock/tune icon in the address bar and enable microphone permissions.</p>
+           <div class="mic-alert-actions">
+-            <button class="btn-alert-action" id="btnAlertInsertSample">💡 Musterantwort einfügen (Use Sample Answer)</button>
++            <button class="btn-alert-action" id="btnAlertInsertSample">Musterantwort einfügen (Use Sample Answer)</button>
+           </div>
+         `;
+       } else if (type === 'no_microphone') {
+@@ -752,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
+           <p><strong>🇩🇪 Hinweis:</strong> Es wurde kein Mikrofon an Ihrem Gerät erkannt. Bitte Headset anschließen oder Text eintippen.</p>
+           <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> സിസ്റ്റത്തിൽ മൈക്രോഫോൺ കണ്ടെത്താൻ സാധിച്ചില്ല. ഹെഡ്സെറ്റ് ബന്ധിപ്പിക്കുക അല്ലെങ്കിൽ നേരിട്ട് ടൈപ്പ് ചെയ്യുക.</p>
+           <div class="mic-alert-actions">
+-            <button class="btn-alert-action" id="btnAlertInsertSample">💡 Musterantwort einfügen</button>
++            <button class="btn-alert-action" id="btnAlertInsertSample">Musterantwort einfügen</button>
+           </div>
+         `;
+       } else if (type === 'no_speech') {
+@@ -769,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
+           <p><strong>🇩🇪 Hinweis:</strong> Der Browser-Spracherkennungsdienst (Google Speech API) konnte nicht kontaktiert werden. Sie können Ihren Text eintippen oder die Musterantwort nutzen.</p>
+           <p class="mic-alert-ml"><strong>🇮🇳 മലയാളം:</strong> ഗൂഗിൾ സ്പീച്ച് സെർവർ കണക്ഷൻ പിശക്. നേരിട്ട് ടൈപ്പ് ചെയ്യുകയോ താഴെയുള്ള Musterantwort ഉപയോഗിക്കുകയോ ചെയ്യാം.</p>
+           <div class="mic-alert-actions">
+-            <button class="btn-alert-action" id="btnAlertInsertSample">💡 Musterantwort einfügen</button>
++            <button class="btn-alert-action" id="btnAlertInsertSample">Musterantwort einfügen</button>
+           </div>
+         `;
+       } else if (type === 'not_supported') {
+@@ -787,11 +786,11 @@ document.addEventListener('DOMContentLoaded', () => {
+ 
+       micAlertBox.innerHTML = `
+         <div class="mic-alert-content">
+-          <div class="mic-alert-icon">🎙️</div>
++          <div class="mic-alert-icon"></div>
+           <div class="mic-alert-body">
+             <div class="mic-alert-head">
+               <strong>${titleDe}</strong> <span class="badge ml-badge">${titleMl}</span>
+-              <button type="button" class="mic-alert-close" id="btnDismissMicAlert" title="Schließen">✕</button>
++              <button type="button" class="mic-alert-close" id="btnDismissMicAlert" title="Schließen"></button>
+             </div>
+             ${desc}
+           </div>
+@@ -912,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
+ 
+               if (interimT) {
+                 if (liveWaveText) {
+-                  liveWaveText.textContent = `🎙️ "${interimT}"...`;
++                  liveWaveText.textContent = `"${interimT}"...`;
+                 }
+               } else {
+                 if (liveWaveText) {
+@@ -976,12 +975,12 @@ document.addEventListener('DOMContentLoaded', () => {
+             }
+           );
+           if (ok) {
+-            btnAudioSaveRecord.textContent = '⏹️ Aufnahme stoppen (Stop Recording)';
++            btnAudioSaveRecord.textContent = '⏹Aufnahme stoppen (Stop Recording)';
+             btnAudioSaveRecord.classList.add('recording-pulse');
+           }
+         } else {
+           speech.stopAudioRecording();
+-          btnAudioSaveRecord.textContent = '⏺️ Aufnahme für Analyse (Record Audio)';
++          btnAudioSaveRecord.textContent = '⏺Aufnahme für Analyse (Record Audio)';
+           btnAudioSaveRecord.classList.remove('recording-pulse');
+         }
+       });
+@@ -1000,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
+         if (!auth.isPremium()) {
+           const usedToday = incrementDailyUsage();
+           if (usedToday > 3) {
+-            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി (3/day) കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക (Use Promo: KERALAB2VIP).');
++            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി (3/day) കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക.');
+             openUpgradeModal();
+             return;
+           }
+@@ -1033,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             <div class="rubric-bars">
+               <div class="rubric-item">
+                 <div class="rubric-label">
+-                  <span>Aufgabenbewältigung (Task Fulfillment) ${result.isThemaverfehlung ? '<span class="badge-thema-fail">⚠️ Thema verfehlt</span>' : ''}</span>
++                  <span>Aufgabenbewältigung (Task Fulfillment) ${result.isThemaverfehlung ? '<span class="badge-thema-fail">Thema verfehlt</span>' : ''}</span>
+                   <strong>${result.ratings.aufgabe}%</strong>
+                 </div>
+                 <div class="bar-track"><div class="bar-fill ${result.isThemaverfehlung ? 'bar-fill-fail' : ''}" style="width: ${result.ratings.aufgabe}%"></div></div>
+@@ -1067,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', () => {
+         ${result.isThemaverfehlung ? `
+           <div class="thema-alert-card">
+             <div class="thema-alert-header">
+-              <span class="thema-alert-icon">⚠️</span>
++              <span class="thema-alert-icon"></span>
+               <h4>Themaverfehlung erkannt! (Off-Topic${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' / വിഷയം മാറിയുള്ള സംസാരം' : ''})</h4>
+             </div>
+             <p class="thema-alert-de">
+@@ -1081,14 +1080,14 @@ document.addEventListener('DOMContentLoaded', () => {
+             <div class="thema-matched-tags">
+               <span>Erkannte Themen-Begriffe:</span> 
+               ${result.matchedTopicKeywords && result.matchedTopicKeywords.length > 0 
+-                ? result.matchedTopicKeywords.map(k => `<span class="tag tag-matched">✓ ${k}</span>`).join('') 
++                ? result.matchedTopicKeywords.map(k => `<span class="tag tag-matched">${k}</span>`).join('') 
+                 : '<span class="tag-none">0 passende Begriffe zum Thema gefunden</span>'}
+             </div>
+           </div>
+         ` : `
+           ${result.matchedTopicKeywords && result.matchedTopicKeywords.length > 0 ? `
+             <div class="thema-success-banner">
+-              🎯 <strong>Themenbezug erfüllt:</strong> ${result.matchedTopicKeywords.length} Schlüsselwörter zum Thema erkannt (${result.matchedTopicKeywords.slice(0, 5).join(', ')}).
++              <strong>Themenbezug erfüllt:</strong> ${result.matchedTopicKeywords.length} Schlüsselwörter zum Thema erkannt (${result.matchedTopicKeywords.slice(0, 5).join(', ')}).
+             </div>
+           ` : ''}
+         `}
+@@ -1098,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
+           <div class="comment-box de-comment">
+             <div class="comment-badge">🇩🇪 Prüferkommentar (${examiner.name})</div>
+             <p>${result.germanExaminerComment}</p>
+-            <button class="small-audio-btn" onclick="speakGerman('${escapeForAttr(result.germanExaminerComment)}')">🔊 Vorlesen</button>
++            <button class="small-audio-btn" onclick="speakGerman('${escapeForAttr(result.germanExaminerComment)}')">Vorlesen</button>
+           </div>
+ 
+           ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `
+@@ -1119,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             <h6>Erkannte B2 Konnektoren (${result.detectedConnectors.length}):</h6>
+             <div class="tag-cloud">
+               ${result.detectedConnectors.length > 0 
+-                ? result.detectedConnectors.map(c => `<span class="tag tag-connector">✓ ${c}</span>`).join('') 
++                ? result.detectedConnectors.map(c => `<span class="tag tag-connector">${c}</span>`).join('') 
+                 : '<span class="tag-none">Keine Konnektoren erkannt</span>'}
+             </div>
+           </div>
+@@ -1128,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             <h6>Nomen-Verb-Verbindungen (${result.detectedNVV.length}):</h6>
+             <div class="tag-cloud">
+               ${result.detectedNVV.length > 0 
+-                ? result.detectedNVV.map(n => `<span class="tag tag-nvv">⭐ ${n}</span>`).join('') 
++                ? result.detectedNVV.map(n => `<span class="tag tag-nvv">${n}</span>`).join('') 
+                 : '<span class="tag-none">Keine NVV erkannt</span>'}
+             </div>
+           </div>
+@@ -1137,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
+         <!-- Grammar Alerts -->
+         ${result.grammarAlerts.length > 0 ? `
+           <div class="grammar-alerts-card">
+-            <h5>⚠️ Grammatik-Hinweis${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' für Malayalam-Sprecher' : ''} (Grammar Alert)</h5>
++            <h5>Grammatik-Hinweis${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' für Malayalam-Sprecher' : ''} (Grammar Alert)</h5>
+             ${result.grammarAlerts.map(a => `
+               <div class="alert-item">
+                 <div class="alert-rule"><strong>${a.type}:</strong> ${a.rule}</div>
+@@ -1151,18 +1150,18 @@ document.addEventListener('DOMContentLoaded', () => {
+         ${currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0 ? `
+           <div class="follow-up-card">
+             <div class="follow-up-header">
+-              <h5>❓ Offizielle Prüfer-Nachfrage (Examiner Follow-up Question)</h5>
++              <h5>Offizielle Prüfer-Nachfrage (Examiner Follow-up Question)</h5>
+               <span class="badge telc-badge">telc Realität</span>
+             </div>
+             <p class="follow-up-q">${currentTask.examinerQuestions[0].question}</p>
+             ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">${currentTask.examinerQuestions[0].questionMl}</div>` : ''}
+             <div class="sample-answer-toggle">
+               <details>
+-                <summary>💡 Musterantwort anzeigen (Sample B2 Answer)</summary>
++                <summary>Musterantwort anzeigen (Sample B2 Answer)</summary>
+                 <div class="sample-ans-box">
+                   <p class="de-sample"><strong>Musterantwort:</strong> ${currentTask.examinerQuestions[0].sampleAnswer}</p>
+                   <p class="ml-sample"><strong>മലയാള അർത്ഥം:</strong> ${currentTask.examinerQuestions[0].sampleAnswerMl}</p>
+-                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.examinerQuestions[0].sampleAnswer)}')">🔊 Antwort anhören</button>
++                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.examinerQuestions[0].sampleAnswer)}')">Antwort anhören</button>
+                 </div>
+               </details>
+             </div>
+@@ -1233,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
+                     <div class="step-content">
+                       <div class="phrase-de">
+                         <span>"${step.phrase}"</span>
+-                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(step.phrase)}')">🔊</button>
++                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(step.phrase)}')"></button>
+                       </div>
+                       <div class="phrase-ml">${step.ml}</div>
+                       ${step.en ? `<div class="phrase-en">${step.en}</div>` : ''}
+@@ -1255,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', () => {
+                       <p><strong>Musterantwort:</strong> ${q.sampleAnswer}</p>
+                       <p class="ml-subtext">${q.sampleAnswerMl}</p>
+                       ${q.sampleAnswerEn ? `<p class="en-subtext">${q.sampleAnswerEn}</p>` : ''}
+-                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(q.sampleAnswer)}')">🔊 Anhören</button>
++                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(q.sampleAnswer)}')">Anhören</button>
+                     </div>
+                   </div>
+                 `).join('')}
+@@ -1295,7 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             <div class="context-article-box">
+               <div class="article-de">
+                 <p><strong>Lesetext:</strong> ${t.contextText}</p>
+-                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(t.contextText)}')">🔊 Text anhören</button>
++                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(t.contextText)}')">Text anhören</button>
+               </div>
+               <div class="article-ml">
+                 <p><strong>മലയാള സംഗ്രഹം:</strong> ${t.contextTextMl}</p>
+@@ -1309,13 +1308,13 @@ document.addEventListener('DOMContentLoaded', () => {
+ 
+             <div class="arguments-split">
+               <div class="pro-column">
+-                <h4 class="pro-heading">👍 Pro-Argumente (അനുകൂല വാദങ്ങൾ)</h4>
++                <h4 class="pro-heading">Pro-Argumente (അനുകൂല വാദങ്ങൾ)</h4>
+                 <ul>
+                   ${t.proArguments.map(arg => `
+                     <li>
+                       <div class="arg-de">
+                         <span>${arg.de}</span>
+-                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')">🔊</button>
++                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')"></button>
+                       </div>
+                       <div class="arg-ml">${arg.ml}</div>
+                       ${arg.en ? `<div class="arg-en">${arg.en}</div>` : ''}
+@@ -1325,13 +1324,13 @@ document.addEventListener('DOMContentLoaded', () => {
+               </div>
+ 
+               <div class="contra-column">
+-                <h4 class="contra-heading">👎 Contra-Argumente (പ്രതികൂല വാദങ്ങൾ)</h4>
++                <h4 class="contra-heading">Contra-Argumente (പ്രതികൂല വാദങ്ങൾ)</h4>
+                 <ul>
+                   ${t.contraArguments.map(arg => `
+                     <li>
+                       <div class="arg-de">
+                         <span>${arg.de}</span>
+-                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')">🔊</button>
++                        <button class="mini-speak" onclick="speakGerman('${escapeForAttr(arg.de)}')"></button>
+                       </div>
+                       <div class="arg-ml">${arg.ml}</div>
+                       ${arg.en ? `<div class="arg-en">${arg.en}</div>` : ''}
+@@ -1382,7 +1381,7 @@ document.addEventListener('DOMContentLoaded', () => {
+               <div class="task-check-grid">
+                 ${t.tasks.map(task => `
+                   <div class="task-check-card">
+-                    <div class="check-icon">📌</div>
++                    <div class="check-icon"></div>
+                     <div>
+                       <div class="task-point-de">${task.point}</div>
+                       <div class="task-point-ml">${task.ml}</div>
+@@ -1403,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
+                       <p class="line-de">${d.text || d.suggestion}</p>
+                       <p class="line-ml">${d.ml}</p>
+                       ${d.en ? `<p class="line-en">${d.en}</p>` : ''}
+-                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(d.text || d.suggestion)}')">🔊</button>
++                      <button class="mini-speak" onclick="speakGerman('${escapeForAttr(d.text || d.suggestion)}')"></button>
+                     </div>
+                   </div>
+                 `).join('')}
+@@ -1433,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
+         </div>
+ 
+         <div class="redemittel-search-box">
+-          <input type="text" id="redemittelSearchInput" class="styled-search-input" placeholder="🔍 Redemittel durchsuchen... (Search German, English or Malayalam)" value="${escapeForAttr(state.redemittelSearch)}">
++          <input type="text" id="redemittelSearchInput" class="styled-search-input" placeholder="Redemittel durchsuchen... (Search German, English or Malayalam)" value="${escapeForAttr(state.redemittelSearch)}">
+         </div>
+       </div>
+ 
+@@ -1481,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
+     if (cats.length === 0) {
+       container.innerHTML = `
+         <div class="no-results-card glass-panel">
+-          <p>🔍 Keine Redemittel für <strong>"${state.redemittelSearch}"</strong> gefunden. Bitte versuchen Sie einen anderen Suchbegriff.</p>
++          <p>Keine Redemittel für <strong>"${state.redemittelSearch}"</strong> gefunden. Bitte versuchen Sie einen anderen Suchbegriff.</p>
+         </div>
+       `;
+       return;
+@@ -1497,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', () => {
+             <div class="phrase-row">
+               <div class="col-de">
+                 <strong>${p.de}</strong>
+-                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(p.de)}')">🔊</button>
++                <button class="mini-speak" onclick="speakGerman('${escapeForAttr(p.de)}')"></button>
+               </div>
+               <div class="col-en">${p.en || ''}</div>
+               <div class="col-ml">${p.ml || ''}</div>
+@@ -1524,7 +1523,7 @@ document.addEventListener('DOMContentLoaded', () => {
+       <!-- Interactive NVV Flashcard Deck -->
+       <div class="nvv-flashcard-section glass-panel">
+         <div class="section-title-row">
+-          <h3>⚡ Nomen-Verb-Verbindungen Flashcard Trainer</h3>
++          <h3>Nomen-Verb-Verbindungen Flashcard Trainer</h3>
+           <span class="badge nvv-badge">Card <span id="cardCounter">1</span> / ${nvv.length}</span>
+         </div>
+ 
+@@ -1534,7 +1533,7 @@ document.addEventListener('DOMContentLoaded', () => {
+               <span class="card-hint">Nomen-Verb-Verbindung (ക്ലിക്ക് ചെയ്ത് അർത്ഥം കാണുക)</span>
+               <h2 id="cardNVVText">${nvv[0].nvv}</h2>
+               <p class="card-ex" id="cardEx">${nvv[0].ex}</p>
+-              <button class="audio-btn" onclick="event.stopPropagation(); speakGerman(document.getElementById('cardNVVText').textContent)">🔊 Aussprache</button>
++              <button class="audio-btn" onclick="event.stopPropagation(); speakGerman(document.getElementById('cardNVVText').textContent)">Aussprache</button>
+             </div>
+             <div class="card-back">
+               <span class="card-hint">Bedeutung & Übersetzungen</span>
+@@ -1547,13 +1546,13 @@ document.addEventListener('DOMContentLoaded', () => {
+ 
+         <div class="flashcard-nav">
+           <button class="btn-secondary" onclick="prevNVVCard()">⬅ Vorherige (Previous)</button>
+-          <button class="btn-primary" onclick="nextNVVCard()">Nächste Karte (Next) ➡</button>
++          <button class="btn-primary" onclick="nextNVVCard()">Nächste Karte (Next) </button>
+         </div>
+       </div>
+ 
+       <!-- Kerala Grammar & Word Order Tips -->
+       <div class="kerala-grammar-cards">
+-        <h3>🎯 മലയാളികൾ സാധാരണ വരുത്തുന്ന തെറ്റുകളും പരിഹാരങ്ങളും (Key Tips)</h3>
++        <h3>മലയാളികൾ സാധാരണ വരുത്തുന്ന തെറ്റുകളും പരിഹാരങ്ങളും (Key Tips)</h3>
+         <div class="tips-grid">
+           ${tips.map(tip => `
+             <div class="tip-card glass-panel">
+@@ -1563,10 +1562,10 @@ document.addEventListener('DOMContentLoaded', () => {
+                 <p class="tip-en">${tip.english}</p>
+               </div>
+               <div class="tip-example-box">
+-                ${tip.example.incorrect ? `<div class="ex-bad">❌ ${tip.example.incorrect}</div>` : ''}
+-                ${tip.example.correct ? `<div class="ex-good">✔️ ${tip.example.correct}</div>` : ''}
++                ${tip.example.incorrect ? `<div class="ex-bad">${tip.example.incorrect}</div>` : ''}
++                ${tip.example.correct ? `<div class="ex-good">${tip.example.correct}</div>` : ''}
+                 ${tip.example.simple ? `<div class="ex-simple">A2/B1: ${tip.example.simple}</div>` : ''}
+-                ${tip.example.b2Level ? `<div class="ex-b2">⭐ B2 Level: ${tip.example.b2Level}</div>` : ''}
++                ${tip.example.b2Level ? `<div class="ex-b2">B2 Level: ${tip.example.b2Level}</div>` : ''}
+                 <div class="ex-ml">മലയാളം: ${tip.example.malayalamMeaning}</div>
+               </div>
+             </div>
+diff --git a/js/auth.js b/js/auth.js
+index d29c36d..ce7f20c 100644
+--- a/js/auth.js
++++ b/js/auth.js
+@@ -216,12 +216,12 @@ class AuthManager {
+       this.saveSession(this.currentUser);
+       return { 
+         success: true, 
+-        message: '🎉 അഭിനന്ദനങ്ങൾ! പ്രീമിയം ആക്സസ് വിജയകരമായി അൺലോക്ക് ചെയ്തു! (Premium Plan Unlocked Successfully!)' 
++        message: 'അഭിനന്ദനങ്ങൾ! പ്രീമിയം ആക്സസ് വിജയകരമായി അൺലോക്ക് ചെയ്തു! (Premium Plan Unlocked Successfully!)' 
+       };
+     } else {
+       return { 
+         success: false, 
+-        message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code). Try code: KERALAB2VIP' 
++        message: 'അസാധുവായ പ്രൊമോ കോഡ് (Invalid Promo Code).' 
+       };
+     }
+   }
+diff --git a/js/examiner.js b/js/examiner.js
+index dc4344f..177b29c 100644
+--- a/js/examiner.js
++++ b/js/examiner.js
+@@ -267,9 +267,9 @@ class TelcExaminer {
+ 
+     // Generate constructive feedback comments
+     if (isThemaverfehlung) {
+-      findings.germanExaminerComment = `⚠️ Themaverfehlung: Ihre Ausführungen gehen nicht auf das vorgegebene Thema ein (${taskTitleDe}). In der telc B2 Prüfung müssen Sie exakt die gestellte Aufgabe bearbeiten. Das Auswendiglernen allgemeiner Sätze ohne Themenbezug führt zum Nichtbestehen im Kriterium Aufgabenbewältigung (maximal Stufe D).`;
+-      findings.englishFeedback = `⚠️ Off-Topic Response (Themaverfehlung): Your response fails to address the designated topic ("${taskTitleEn}"). In official Telc B2 exams, speaking on the wrong topic caps Task Fulfillment at Grade D, causing an overall failure even if your grammar is sound.`;
+-      findings.malayalamFeedback = `⚠️ വിഷയം മാറിയുള്ള സംസാരം (Themaverfehlung / Off-Topic): നിങ്ങൾ സംസാരിച്ചത് നൽകിയിരിക്കുന്ന വിഷയവുമായി ('${taskTitleMl}') ബന്ധപ്പെട്ടതല്ല. telc B2 പരീക്ഷയിൽ വിഷയം തെറ്റിയാൽ 'Aufgabenbewältigung'-ൽ പരമാവധി 20-25% മാർക്ക് മാത്രമേ ലഭിക്കൂ, പരീക്ഷയിൽ പരാജയപ്പെടുകയും (Fail) ചെയ്യും. വ്യാകരണം എത്ര മികച്ചതാണെങ്കിലും നൽകിയിരിക്കുന്ന വിഷയം തന്നെ സംസാരിക്കണം.`;
++      findings.germanExaminerComment = `Themaverfehlung: Ihre Ausführungen gehen nicht auf das vorgegebene Thema ein (${taskTitleDe}). In der telc B2 Prüfung müssen Sie exakt die gestellte Aufgabe bearbeiten. Das Auswendiglernen allgemeiner Sätze ohne Themenbezug führt zum Nichtbestehen im Kriterium Aufgabenbewältigung (maximal Stufe D).`;
++      findings.englishFeedback = `Off-Topic Response (Themaverfehlung): Your response fails to address the designated topic ("${taskTitleEn}"). In official Telc B2 exams, speaking on the wrong topic caps Task Fulfillment at Grade D, causing an overall failure even if your grammar is sound.`;
++      findings.malayalamFeedback = `വിഷയം മാറിയുള്ള സംസാരം (Themaverfehlung / Off-Topic): നിങ്ങൾ സംസാരിച്ചത് നൽകിയിരിക്കുന്ന വിഷയവുമായി ('${taskTitleMl}') ബന്ധപ്പെട്ടതല്ല. telc B2 പരീക്ഷയിൽ വിഷയം തെറ്റിയാൽ 'Aufgabenbewältigung'-ൽ പരമാവധി 20-25% മാർക്ക് മാത്രമേ ലഭിക്കൂ, പരീക്ഷയിൽ പരാജയപ്പെടുകയും (Fail) ചെയ്യും. വ്യാകരണം എത്ര മികച്ചതാണെങ്കിലും നൽകിയിരിക്കുന്ന വിഷയം തന്നെ സംസാരിക്കണം.`;
+     } else if (findings.scoreTotal >= 75) {
+       findings.germanExaminerComment = `Sehr gute Leistung! Sie haben das Thema („${taskTitleDe}“) überzeugend bearbeitet und B2-relevante Strukturen gezeigt. Ihre Aufgabenbewältigung und Ausdrucksfähigkeit sind angemessen und klar strukturiert.`;
+       findings.englishFeedback = `Great performance! You demonstrated solid B2 structures, stayed focused on the topic ("${taskTitleEn}"), and reasoned clearly. Keep using advanced collocations like this!`;
+-- 
+2.43.0
+

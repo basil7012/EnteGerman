@@ -60,6 +60,12 @@
           </select>
         </div>
 
+        <!-- AI Examiner Status & Settings Button -->
+        <button type="button" class="control-pill ai-header-pill" id="btnOpenAISettings" title="telc B2 KI-Prüfer Konfiguration (AI Settings)">
+          <span class="ai-status-dot" id="aiStatusDot"></span>
+          <span class="ai-pill-label">KI: <strong id="aiPillStatus">Bereit</strong></span>
+        </button>
+
         <!-- User Authentication & Membership Status Widget -->
         <div id="userAuthContainer" class="user-auth-widget">
           <!-- Dynamically populated by auth.js -->
@@ -250,9 +256,85 @@
     </div>
   </div>
 
+  <!-- AI EXAMINER CONFIGURATION MODAL -->
+  <div id="aiSettingsModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-card glass-panel ai-modal-card">
+      <button class="modal-close-btn" id="btnCloseAISettingsModal" type="button">✕</button>
+      
+      <div class="ai-modal-header">
+        <div class="ai-modal-badge">telc B2 AI Engine</div>
+        <h2>KI-Prüfer Einstellungen</h2>
+        <p class="subtitle-ml">Google Gemini AI ഉപയോഗിച്ച് നിങ്ങളുടെ സംസാര സെഷൻ തത്സമയം വിശകലനം ചെയ്യുക</p>
+      </div>
+
+      <div class="ai-free-tier-notice">
+        <div class="notice-head">
+          <span class="notice-tag">100% സൗജന്യം</span>
+          <strong>Google AI Studio (Gemini 2.0 / 1.5 Flash)</strong>
+        </div>
+        <p class="notice-desc">
+          Google AI Studio വഴി ക്രെഡിറ്റ് കാർഡ് ഇല്ലാതെ തന്നെ <strong>സൗജന്യമായി</strong> Gemini API Key ലഭിക്കും. ഇത് ഒരു മിനിറ്റിൽ 15 റിക്വസ്റ്റുകളും പ്രതിദിനം 1,500 പരീക്ഷാ സെഷനുകളും സൗജന്യമായി നൽകുന്നു.
+        </p>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="btn-external-link">
+          സൗജന്യ Gemini API Key എടുക്കാൻ ഇവിടെ ക്ലിക്ക് ചെയ്യുക (Google AI Studio) ↗
+        </a>
+      </div>
+
+      <form id="aiSettingsForm" class="ai-settings-form">
+        <!-- AI Enable Toggle -->
+        <div class="ai-toggle-row">
+          <div class="toggle-labels">
+            <strong>KI-Prüfer aktivieren (Enable AI Analysis)</strong>
+            <span>ഓരോ സംസാരത്തിനും കൃത്യമായ AI മാർക്കുകളും തിരുത്തലുകളും നൽകുന്നു</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="aiEnabledToggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <!-- Provider Select -->
+        <div class="form-group">
+          <label for="aiProviderSelect">AI പ്രൊവൈഡർ (Provider):</label>
+          <select id="aiProviderSelect" class="header-select full-width-select">
+            <option value="gemini" selected>Google Gemini 2.0 / 1.5 Flash (100% Free • ശുപാർശ ചെയ്യുന്നത്)</option>
+            <option value="groq">Groq • Llama 3.3 70B (100% Free • സൂപ്പർ ഫാസ്റ്റ്)</option>
+            <option value="openai">OpenAI • GPT-4o-mini (Paid Key)</option>
+          </select>
+        </div>
+
+        <!-- API Key Input -->
+        <div class="form-group">
+          <label for="aiApiKeyInput">നിങ്ങളുടെ API Key:</label>
+          <div class="api-key-input-wrapper">
+            <input type="password" id="aiApiKeyInput" placeholder="AIzaSy... അല്ലെങ്കിൽ gsk_..." autocomplete="off">
+            <button type="button" class="btn-toggle-visibility" id="btnToggleKeyVisibility" title="കീ കാണിക്കുക/മറയ്ക്കുക">👁</button>
+          </div>
+          <small class="form-hint">
+            🔒 ഈ കീ നിങ്ങളുടെ ബ്രൗസറിൽ (localStorage) മാത്രമേ സൂക്ഷിക്കപ്പെടുകയുള്ളൂ. സെർവറിലേക്ക് അയക്കപ്പെടുന്നില്ല.
+          </small>
+        </div>
+
+        <!-- Test Connection Feedback Box -->
+        <div id="aiTestFeedback" class="ai-test-feedback-box" style="display: none;"></div>
+
+        <!-- Action Buttons -->
+        <div class="ai-modal-actions">
+          <button type="button" class="btn-secondary" id="btnTestAIConnection">
+            ⚡ കണക്ഷൻ ടെസ്റ്റ് ചെയ്യുക (Test Connection)
+          </button>
+          <button type="submit" class="btn-primary" id="btnSaveAISettings">
+            സേവ് ചെയ്യുക (Save Settings)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Application Scripts -->
   <script src="js/data.js"></script>
   <script src="js/speech.js"></script>
+  <script src="js/ai-service.js"></script>
   <script src="js/examiner.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/app.js"></script>

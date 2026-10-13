@@ -145,6 +145,128 @@ document.addEventListener('DOMContentLoaded', () => {
     if (upgradeModal) upgradeModal.style.display = 'none';
   };
 
+  // AI Configuration Modal
+  const aiSettingsModal = document.getElementById('aiSettingsModal');
+  const btnOpenAISettings = document.getElementById('btnOpenAISettings');
+  const btnCloseAISettings = document.getElementById('btnCloseAISettingsModal');
+
+  window.openAISettingsModal = function() {
+    if (aiSettingsModal) {
+      aiSettingsModal.style.display = 'flex';
+      syncAISettingsForm();
+    }
+  };
+
+  window.closeAISettingsModal = function() {
+    if (aiSettingsModal) aiSettingsModal.style.display = 'none';
+  };
+
+  if (btnOpenAISettings) btnOpenAISettings.addEventListener('click', openAISettingsModal);
+  if (btnCloseAISettings) btnCloseAISettings.addEventListener('click', closeAISettingsModal);
+
+  function updateAIHeaderStatus() {
+    const dot = document.getElementById('aiStatusDot');
+    const label = document.getElementById('aiPillStatus');
+    if (!dot || !label || !window.aiService) return;
+
+    const settings = window.aiService.getSettings();
+    if (!settings.enabled) {
+      dot.className = 'ai-status-dot dot-disabled';
+      label.textContent = 'Aus';
+    } else if (settings.apiKey) {
+      dot.className = 'ai-status-dot dot-green';
+      label.textContent = settings.provider === 'gemini' ? 'Gemini AI' : (settings.provider === 'groq' ? 'Groq' : 'OpenAI');
+    } else {
+      dot.className = 'ai-status-dot dot-yellow';
+      label.textContent = 'Bereit';
+    }
+  }
+
+  function syncAISettingsForm() {
+    if (!window.aiService) return;
+    const settings = window.aiService.getSettings();
+    const toggle = document.getElementById('aiEnabledToggle');
+    const providerSelect = document.getElementById('aiProviderSelect');
+    const keyInput = document.getElementById('aiApiKeyInput');
+    const feedback = document.getElementById('aiTestFeedback');
+
+    if (toggle) toggle.checked = settings.enabled;
+    if (providerSelect) providerSelect.value = settings.provider || 'gemini';
+    if (keyInput) keyInput.value = settings.apiKey || '';
+    if (feedback) feedback.style.display = 'none';
+  }
+
+  const aiSettingsForm = document.getElementById('aiSettingsForm');
+  if (aiSettingsForm) {
+    aiSettingsForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!window.aiService) return;
+
+      const enabled = document.getElementById('aiEnabledToggle')?.checked ?? true;
+      const provider = document.getElementById('aiProviderSelect')?.value || 'gemini';
+      const apiKey = document.getElementById('aiApiKeyInput')?.value || '';
+
+      window.aiService.saveSettings({ provider, apiKey, enabled });
+      updateAIHeaderStatus();
+
+      const feedback = document.getElementById('aiTestFeedback');
+      if (feedback) {
+        feedback.className = 'ai-test-feedback-box success-box';
+        feedback.innerHTML = '✓ ക്രമീകരണങ്ങൾ സേവ് ചെയ്തു (Settings saved successfully).';
+        feedback.style.display = 'block';
+      }
+
+      setTimeout(() => {
+        closeAISettingsModal();
+      }, 900);
+    });
+  }
+
+  const btnTestAI = document.getElementById('btnTestAIConnection');
+  if (btnTestAI) {
+    btnTestAI.addEventListener('click', async () => {
+      if (!window.aiService) return;
+      const provider = document.getElementById('aiProviderSelect')?.value || 'gemini';
+      const key = document.getElementById('aiApiKeyInput')?.value || '';
+      const feedback = document.getElementById('aiTestFeedback');
+      if (!feedback) return;
+
+      btnTestAI.disabled = true;
+      btnTestAI.innerHTML = '⚡ കണക്റ്റ് ചെയ്യുന്നു...';
+      feedback.style.display = 'none';
+
+      try {
+        const res = await window.aiService.testConnection(provider, key);
+        feedback.className = 'ai-test-feedback-box success-box';
+        feedback.innerHTML = `✓ വിജയകരം! ${res.provider} വിജയകരമായി കണക്റ്റ് ചെയ്തു (Connection verified).`;
+        feedback.style.display = 'block';
+      } catch (err) {
+        feedback.className = 'ai-test-feedback-box error-box';
+        feedback.innerHTML = `✕ കണക്ഷൻ പരാജയപ്പെട്ടു: ${escapeHtml(err.message)}`;
+        feedback.style.display = 'block';
+      } finally {
+        btnTestAI.disabled = false;
+        btnTestAI.innerHTML = '⚡ കണക്ഷൻ ടെസ്റ്റ് ചെയ്യുക (Test Connection)';
+      }
+    });
+  }
+
+  const btnToggleKeyVis = document.getElementById('btnToggleKeyVisibility');
+  if (btnToggleKeyVis) {
+    btnToggleKeyVis.addEventListener('click', () => {
+      const keyInput = document.getElementById('aiApiKeyInput');
+      if (keyInput) {
+        if (keyInput.type === 'password') {
+          keyInput.type = 'text';
+          btnToggleKeyVis.textContent = '🔒';
+        } else {
+          keyInput.type = 'password';
+          btnToggleKeyVis.textContent = '👁';
+        }
+      }
+    });
+  }
+
   // Close modals on outside click or close button
   const btnCloseAuth = document.getElementById('btnCloseAuthModal');
   if (btnCloseAuth) btnCloseAuth.addEventListener('click', closeAuthModal);
@@ -1013,9 +1135,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Evaluation Button with Free Tier Limit Check
+    // Evaluation Button with Free Tier Limit Check & AI Analysis
     if (btnEvaluateResponse) {
-      btnEvaluateResponse.addEventListener('click', () => {
+      btnEvaluateResponse.addEventListener('click', async () => {
         const text = userResponseInput.value.trim();
         if (!text) {
           alert('Bitte geben Sie zuerst eine Antwort ein oder sprechen Sie ins Mikrofon!');
@@ -1025,15 +1147,56 @@ document.addEventListener('DOMContentLoaded', () => {
         // Daily usage limit for free / guest users (stored in localStorage)
         if (!auth.isPremium()) {
           const usedToday = incrementDailyUsage();
-          if (usedToday > 3) {
-            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി (3/day) കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക.');
+          if (usedToday > 5) {
+            alert('നിങ്ങളുടെ ഇന്നത്തെ സൗജന്യ മോക്ക് എക്സാം പരിധി കഴിഞ്ഞു. പരിധിയില്ലാതെ പരിശീലിക്കാൻ പ്രീമിയം അൺലോക്ക് ചെയ്യുക.');
             openUpgradeModal();
             return;
           }
         }
 
-        const result = examiner.evaluateResponse(text, state.examPart, currentTask);
-        displayExaminerFeedback(result, currentTask);
+        // Animated AI Loading Stage
+        const feedbackContainer = document.getElementById('feedbackContainer');
+        if (feedbackContainer) {
+          feedbackContainer.style.display = 'block';
+          feedbackContainer.innerHTML = `
+            <div class="feedback-card glass-panel ai-loading-panel animate-fade-in">
+              <div class="ai-loading-header">
+                <div class="ai-pulse-radar">
+                  <div class="radar-circle radar-circle-1"></div>
+                  <div class="radar-circle radar-circle-2"></div>
+                  <div class="radar-core">W</div>
+                </div>
+                <div class="ai-loading-title-group">
+                  <h4>Frau Dr. Weber analysiert Ihre Sprachaufnahme...</h4>
+                  <p class="ai-loading-sub">Offizielle telc B2 Kriterien werden mit KI ausgewertet • Gemini AI Engine</p>
+                </div>
+              </div>
+              <div class="ai-loading-steps-row">
+                <div class="ai-step-badge step-done"><span>✓</span> 1. Sprache transkribieren & scannen</div>
+                <div class="ai-step-badge step-active"><span>⚡</span> 2. Grammatik, B2-Konnektoren & NVV prüfen</div>
+                <div class="ai-step-badge step-pending"><span>⏳</span> 3. Aufgabenbewältigung & Thema bewerten</div>
+                <div class="ai-step-badge step-pending"><span>✍</span> 4. Malayalam & deutsche Empfehlungen erstellen</div>
+              </div>
+            </div>
+          `;
+          feedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        btnEvaluateResponse.disabled = true;
+        const originalBtnText = btnEvaluateResponse.innerHTML;
+        btnEvaluateResponse.innerHTML = `<span class="spin-icon">⚡</span> KI analysiert Antwort...`;
+
+        try {
+          const result = await examiner.evaluate(text, state.examPart, currentTask);
+          displayExaminerFeedback(result, currentTask);
+        } catch (evalErr) {
+          console.error('AI Evaluation error:', evalErr);
+          const fallback = examiner.evaluateResponse(text, state.examPart, currentTask);
+          displayExaminerFeedback(fallback, currentTask);
+        } finally {
+          btnEvaluateResponse.disabled = false;
+          btnEvaluateResponse.innerHTML = originalBtnText;
+        }
       });
     }
   }
@@ -1047,6 +1210,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let html = `
       <div class="feedback-card glass-panel animate-fade-in">
+
+        <!-- AI Engine Status Banner -->
+        <div class="ai-feedback-banner ${result.isAIEvaluated ? 'ai-active-banner' : 'ai-local-banner'}">
+          <div class="ai-badge-left">
+            <span class="ai-icon-chip">${result.isAIEvaluated ? '🤖 KI-ANALYSE AKTIV' : '⚡ LOKALE PRÜFERIN'}</span>
+            <span class="ai-model-tag">${escapeHtml(result.aiProvider || 'telc B2 Engine')}</span>
+          </div>
+          ${!result.isAIEvaluated ? `
+            <button type="button" class="btn-config-ai-link" onclick="openAISettingsModal()">
+              <span>⚙️</span> Kostenlose Gemini KI aktivieren ↗
+            </button>
+          ` : `
+            <span class="ai-status-verified">✓ Detaillierte KI-Sprachanalyse abgeschlossen</span>
+          `}
+        </div>
+
         <div class="feedback-top-header">
           <div class="score-display ${scoreColor}">
             <div class="score-number">${result.scoreTotal}</div>
@@ -1107,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="thema-matched-tags">
               <span>Erkannte Themen-Begriffe:</span> 
               ${result.matchedTopicKeywords && result.matchedTopicKeywords.length > 0 
-                ? result.matchedTopicKeywords.map(k => `<span class="tag tag-matched">${k}</span>`).join('') 
+                ? result.matchedTopicKeywords.map(k => `<span class="tag tag-matched">${escapeHtml(k)}</span>`).join('') 
                 : '<span class="tag-none">0 passende Begriffe zum Thema gefunden</span>'}
             </div>
           </div>
@@ -1145,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <h6>Erkannte B2 Konnektoren (${result.detectedConnectors.length}):</h6>
             <div class="tag-cloud">
               ${result.detectedConnectors.length > 0 
-                ? result.detectedConnectors.map(c => `<span class="tag tag-connector">${c}</span>`).join('') 
+                ? result.detectedConnectors.map(c => `<span class="tag tag-connector">${escapeHtml(c)}</span>`).join('') 
                 : '<span class="tag-none">Keine Konnektoren erkannt</span>'}
             </div>
           </div>
@@ -1154,41 +1333,100 @@ document.addEventListener('DOMContentLoaded', () => {
             <h6>Nomen-Verb-Verbindungen (${result.detectedNVV.length}):</h6>
             <div class="tag-cloud">
               ${result.detectedNVV.length > 0 
-                ? result.detectedNVV.map(n => `<span class="tag tag-nvv">${n}</span>`).join('') 
+                ? result.detectedNVV.map(n => `<span class="tag tag-nvv">${escapeHtml(n)}</span>`).join('') 
                 : '<span class="tag-none">Keine NVV erkannt</span>'}
             </div>
           </div>
         </div>
 
-        <!-- Grammar Alerts -->
-        ${result.grammarAlerts.length > 0 ? `
+        <!-- Detailed Grammar Corrections -->
+        ${result.grammarAlerts && result.grammarAlerts.length > 0 ? `
           <div class="grammar-alerts-card">
-            <h5>Grammatik-Hinweis${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? ' für Malayalam-Sprecher' : ''} (Grammar Alert)</h5>
-            ${result.grammarAlerts.map(a => `
-              <div class="alert-item">
-                <div class="alert-rule"><strong>${a.type}:</strong> ${a.rule}</div>
-                ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="alert-ml">${a.ml}</div>` : ''}
-              </div>
-            `).join('')}
+            <div class="grammar-card-head">
+              <h5>Grammatik-Korrekturen (Grammar Corrections)</h5>
+              <span class="badge grammar-badge">${result.grammarAlerts.length} Punkte analysiert</span>
+            </div>
+            <div class="grammar-corrections-list">
+              ${result.grammarAlerts.map(a => `
+                <div class="grammar-correction-item">
+                  ${a.original || a.corrected ? `
+                    <div class="grammar-diff-box">
+                      ${a.original ? `<div class="diff-original"><span class="diff-tag bad">Ihre Formulierung:</span> <s>"${escapeHtml(a.original)}"</s></div>` : ''}
+                      ${a.corrected ? `<div class="diff-corrected"><span class="diff-tag good">Korrektur (B2):</span> <strong>"${escapeHtml(a.corrected)}"</strong></div>` : ''}
+                    </div>
+                  ` : ''}
+                  <div class="alert-rule"><strong>Regel:</strong> ${escapeHtml(a.rule || a.type)}</div>
+                  ${state.langMode !== 'en-only' && state.langMode !== 'de-only' && a.ml ? `
+                    <div class="alert-ml"><strong>🇮🇳 മലയാളം:</strong> ${escapeHtml(a.ml)}</div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
           </div>
         ` : ''}
 
-        <!-- Next Step: Examiner Follow-up Question -->
-        ${currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0 ? `
+        <!-- B2 Vocabulary & Expression Upgrades -->
+        ${result.improvements && result.improvements.length > 0 ? `
+          <div class="upgrades-card">
+            <div class="upgrades-card-head">
+              <h5>B2 Ausdrucks-Upgrades (Vocabulary & Phrase Boost)</h5>
+              <span class="badge upgrades-badge">B2 Niveau steigern</span>
+            </div>
+            <div class="upgrades-grid">
+              ${result.improvements.map(imp => `
+                <div class="upgrade-item-card">
+                  ${imp.original || imp.betterB2 ? `
+                    <div class="upgrade-diff">
+                      ${imp.original ? `<div class="up-orig"><span class="diff-tag">Einfach:</span> "${escapeHtml(imp.original)}"</div>` : ''}
+                      ${imp.betterB2 ? `<div class="up-better"><span class="diff-tag good">B2 Niveau:</span> <strong>"${escapeHtml(imp.betterB2)}"</strong></div>` : ''}
+                    </div>
+                  ` : ''}
+                  <div class="upgrade-tip">${escapeHtml(imp.tip)}</div>
+                  ${state.langMode !== 'en-only' && state.langMode !== 'de-only' && imp.ml ? `
+                    <div class="upgrade-ml"><strong>🇮🇳 മലയാളം:</strong> ${escapeHtml(imp.ml)}</div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Pronunciation Notes for Malayalam Learners -->
+        ${result.pronunciationTips && result.pronunciationTips.length > 0 ? `
+          <div class="pronunciation-card">
+            <h5>Aussprache & Phonetik für Malayalam-Sprecher (Pronunciation Notes)</h5>
+            <div class="pronunciation-list">
+              ${result.pronunciationTips.map(pt => `
+                <div class="pronunciation-item">
+                  <div class="pt-de">${escapeHtml(pt.tip)}</div>
+                  ${state.langMode !== 'en-only' && state.langMode !== 'de-only' && pt.ml ? `
+                    <div class="pt-ml"><strong>🇮🇳 മലയാളം:</strong> ${escapeHtml(pt.ml)}</div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Next Step: Dynamic AI or Static Examiner Follow-up Question -->
+        ${(result.examinerFollowUp || (currentTask.examinerQuestions && currentTask.examinerQuestions.length > 0)) ? `
           <div class="follow-up-card">
             <div class="follow-up-header">
               <h5>Offizielle Prüfer-Nachfrage (Examiner Follow-up Question)</h5>
-              <span class="badge telc-badge">telc Realität</span>
+              <span class="badge telc-badge">${result.examinerFollowUp ? '✨ KI-Prüfungsgespräch' : 'telc Realität'}</span>
             </div>
-            <p class="follow-up-q">${currentTask.examinerQuestions[0].question}</p>
-            ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `<div class="ml-subtext">${currentTask.examinerQuestions[0].questionMl}</div>` : ''}
+            <p class="follow-up-q">${escapeHtml(result.examinerFollowUp ? result.examinerFollowUp.question : currentTask.examinerQuestions[0].question)}</p>
+            <button class="small-audio-btn" onclick="speakGerman('${escapeForAttr(result.examinerFollowUp ? result.examinerFollowUp.question : currentTask.examinerQuestions[0].question)}')">Frage anhören</button>
+            ${state.langMode !== 'en-only' && state.langMode !== 'de-only' ? `
+              <div class="ml-subtext">${escapeHtml(result.examinerFollowUp ? result.examinerFollowUp.questionMl : currentTask.examinerQuestions[0].questionMl)}</div>
+            ` : ''}
             <div class="sample-answer-toggle">
               <details>
                 <summary>Musterantwort anzeigen (Sample B2 Answer)</summary>
                 <div class="sample-ans-box">
-                  <p class="de-sample"><strong>Musterantwort:</strong> ${currentTask.examinerQuestions[0].sampleAnswer}</p>
-                  <p class="ml-sample"><strong>മലയാള അർത്ഥം:</strong> ${currentTask.examinerQuestions[0].sampleAnswerMl}</p>
-                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(currentTask.examinerQuestions[0].sampleAnswer)}')">Antwort anhören</button>
+                  <p class="de-sample"><strong>Musterantwort:</strong> ${escapeHtml(result.examinerFollowUp ? result.examinerFollowUp.sampleAnswer : currentTask.examinerQuestions[0].sampleAnswer)}</p>
+                  <p class="ml-sample"><strong>മലയാള അർത്ഥം:</strong> ${escapeHtml(result.examinerFollowUp ? result.examinerFollowUp.sampleAnswerMl : currentTask.examinerQuestions[0].sampleAnswerMl)}</p>
+                  <button class="audio-btn" onclick="speakGerman('${escapeForAttr(result.examinerFollowUp ? result.examinerFollowUp.sampleAnswer : currentTask.examinerQuestions[0].sampleAnswer)}')">Antwort anhören</button>
                 </div>
               </details>
             </div>
@@ -1700,12 +1938,23 @@ document.addEventListener('DOMContentLoaded', () => {
     return str.replace(/"/g, '&quot;').replace(/'/g, "\\'").replace(/\n/g, ' ');
   }
 
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Global Keyboard Navigation Shortcuts
   document.addEventListener('keydown', (e) => {
     // ESC closes modals
     if (e.key === 'Escape') {
       closeAuthModal();
       closeUpgradeModal();
+      closeAISettingsModal();
     }
 
     // Flashcard shortcuts when on Kerala tab & not focused on inputs
@@ -1727,5 +1976,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial Boot
   updateLanguageVisibility();
   renderUserAuthWidget();
+  updateAIHeaderStatus();
   renderExaminerStage();
 });
