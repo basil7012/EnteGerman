@@ -2935,8 +2935,8 @@ input:checked + .slider:before {
 }
 
 .ai-feedback-banner.ai-active-banner {
-  background: rgba(46, 148, 132, 0.12);
-  border: 1px solid rgba(46, 148, 132, 0.35);
+  background: rgba(46, 148, 132, 0.14);
+  border: 1px solid rgba(46, 148, 132, 0.45);
 }
 
 .ai-feedback-banner.ai-local-banner {
@@ -2944,10 +2944,21 @@ input:checked + .slider:before {
   border: 1px solid rgba(217, 169, 58, 0.25);
 }
 
+.ai-feedback-banner.ai-warn-banner {
+  background: rgba(220, 100, 40, 0.1);
+  border: 1px solid rgba(220, 130, 40, 0.35);
+}
+
 .ai-badge-left {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.ai-badge-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ai-icon-chip {
@@ -2957,6 +2968,16 @@ input:checked + .slider:before {
   padding: 3px 8px;
   border-radius: 4px;
   background: var(--primary);
+  color: #fff;
+}
+
+.ai-icon-chip.ai-chip-success {
+  background: linear-gradient(90deg, #1a7a6e, #2e9484);
+  color: #fff;
+}
+
+.ai-icon-chip.ai-chip-warn {
+  background: rgba(220, 100, 40, 0.75);
   color: #fff;
 }
 
@@ -2981,6 +3002,16 @@ input:checked + .slider:before {
 .btn-config-ai-link:hover {
   background: var(--accent-gold);
   color: #1a1300;
+}
+
+.btn-retry-ai {
+  color: #f8a55e;
+  border-color: rgba(220, 130, 40, 0.55);
+}
+
+.btn-retry-ai:hover {
+  background: rgba(220, 130, 40, 0.2);
+  color: #f8a55e;
 }
 
 .ai-status-verified {

@@ -1224,12 +1224,16 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEvaluateResponse.innerHTML = `<span class="spin-icon">⚡</span> KI analysiert Antwort...`;
 
         try {
+          const serverStatus = window.aiService ? await window.aiService.checkServerStatus() : { serverConfigured: false };
           const result = await examiner.evaluate(text, state.examPart, currentTask);
-          displayExaminerFeedback(result, currentTask);
+          displayExaminerFeedback(result, currentTask, serverStatus);
         } catch (evalErr) {
           console.error('AI Evaluation error:', evalErr);
           const fallback = examiner.evaluateResponse(text, state.examPart, currentTask);
-          displayExaminerFeedback(fallback, currentTask);
+          fallback.isAIEvaluated = false;
+          fallback.aiProvider = 'Lokale Prüfer-Regeln (Standard Engine)';
+          const serverStatus = window.aiService ? (window.aiService._cachedServerStatus || { serverConfigured: false }) : { serverConfigured: false };
+          displayExaminerFeedback(fallback, currentTask, serverStatus);
         } finally {
           btnEvaluateResponse.disabled = false;
           btnEvaluateResponse.innerHTML = originalBtnText;
@@ -1238,29 +1242,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function displayExaminerFeedback(result, currentTask) {
+  function displayExaminerFeedback(result, currentTask, serverStatus) {
     const container = document.getElementById('feedbackContainer');
     if (!container) return;
 
+    const serverConfigured = serverStatus && serverStatus.serverConfigured;
+
     let scoreColor = result.isThemaverfehlung ? 'score-red' : (result.scoreTotal >= 75 ? 'score-green' : (result.scoreTotal >= 60 ? 'score-yellow' : 'score-red'));
     let scoreStatus = result.isThemaverfehlung ? 'THEMAVERFEHLUNG (FAIL)' : (result.scoreTotal >= 60 ? 'B2 BESTANDEN (PASS)' : 'B2 WEITER ÜBEN');
+
+    // Determine AI banner state
+    let aiBannerClass, aiChipHtml, aiRightHtml;
+    if (result.isAIEvaluated) {
+      // AI succeeded
+      aiBannerClass = 'ai-active-banner';
+      aiChipHtml = `<span class="ai-icon-chip ai-chip-success">🤖 GEMINI AI AKTIV</span><span class="ai-model-tag">${escapeHtml(result.aiProvider || 'Google Gemini')}</span>`;
+      aiRightHtml = `<span class="ai-status-verified">✓ Vollständige KI-Sprachanalyse abgeschlossen</span>`;
+    } else if (serverConfigured) {
+      // Server has key but AI call failed/fell back
+      aiBannerClass = 'ai-warn-banner';
+      aiChipHtml = `<span class="ai-icon-chip ai-chip-warn">⚠️ KI-VERBINDUNGSFEHLER</span><span class="ai-model-tag">Lokale Analyse (Gemini-Schlüssel aktiv)</span>`;
+      aiRightHtml = `<button type="button" class="btn-config-ai-link btn-retry-ai" onclick="location.reload()" title="Seite neu laden und AI erneut versuchen">🔄 Erneut versuchen</button>`;
+    } else {
+      // No AI configured at all
+      aiBannerClass = 'ai-local-banner';
+      aiChipHtml = `<span class="ai-icon-chip">⚡ LOKALE ANALYSE</span><span class="ai-model-tag">Regelbasierte telc B2 Engine</span>`;
+      aiRightHtml = `<button type="button" class="btn-config-ai-link" onclick="openAISettingsModal()"><span>⚙️</span> Kostenlose Gemini KI aktivieren ↗</button>`;
+    }
 
     let html = `
       <div class="feedback-card glass-panel animate-fade-in">
 
         <!-- AI Engine Status Banner -->
-        <div class="ai-feedback-banner ${result.isAIEvaluated ? 'ai-active-banner' : 'ai-local-banner'}">
-          <div class="ai-badge-left">
-            <span class="ai-icon-chip">${result.isAIEvaluated ? '🤖 KI-ANALYSE AKTIV' : '⚡ LOKALE PRÜFERIN'}</span>
-            <span class="ai-model-tag">${escapeHtml(result.aiProvider || 'telc B2 Engine')}</span>
-          </div>
-          ${!result.isAIEvaluated ? `
-            <button type="button" class="btn-config-ai-link" onclick="openAISettingsModal()">
-              <span>⚙️</span> Kostenlose Gemini KI aktivieren ↗
-            </button>
-          ` : `
-            <span class="ai-status-verified">✓ Detaillierte KI-Sprachanalyse abgeschlossen</span>
-          `}
+        <div class="ai-feedback-banner ${aiBannerClass}">
+          <div class="ai-badge-left">${aiChipHtml}</div>
+          <div class="ai-badge-right">${aiRightHtml}</div>
         </div>
 
         <div class="feedback-top-header">
